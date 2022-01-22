@@ -701,9 +701,9 @@ prepend-http@^2.0.0:
   resolved "https://registry.yarnpkg.com/prepend-http/-/prepend-http-2.0.0.tgz#e92434bfa5ea8c19f41cdfd401d741a3c819d897"
   integrity sha1-6SQ0v6XqjBn0HN/UAddBo8gZ2Jc=
 
-presonus-studiolive-api-simple-api@featherbear/presonus-studiolive-api-simple-api#f22983d:
+presonus-studiolive-api-simple-api@featherbear/presonus-studiolive-api-simple-api#456a1769764eec30f404c1bfaabda23f9bfb23f9:
   version "1.0.0"
-  resolved "https://codeload.github.com/featherbear/presonus-studiolive-api-simple-api/tar.gz/f22983d477afc14dd193ba72b3da1c3dd0073655"
+  resolved "https://codeload.github.com/featherbear/presonus-studiolive-api-simple-api/tar.gz/456a1769764eec30f404c1bfaabda23f9bfb23f9"
   dependencies:
     presonus-studiolive-api featherbear/presonus-studiolive-api#000c08b
     typescript "^4.5.5"
