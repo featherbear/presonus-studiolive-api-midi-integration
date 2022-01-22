@@ -1,0 +1,20 @@
+{
+  "name": "presonus-studiolive-api-midi-integration",
+  "scripts": {
+    "start": "sucrase-node src/index.ts | bunyan",
+    "dev": "nodemon src/index.ts | bunyan"
+  },
+  "repository": "git@github.com:featherbear/presonus-studiolive-api-midi-integration.git",
+  "author": "Andrew Wong <andrew.j.wong@outlook.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^2.0.15",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "bunyan": "^1.8.15",
+    "easymidi": "^2.1.0",
+    "presonus-studiolive-api-simple-api": "featherbear/presonus-studiolive-api-simple-api#0c0306aee447d17dd5638184713ead6eeafdcb58",
+    "sucrase": "^3.20.3"
+  }
+}
