@@ -13,8 +13,9 @@
   },
   "dependencies": {
     "bunyan": "^1.8.15",
+    "dotenv": "^14.2.0",
     "easymidi": "^2.1.0",
-    "presonus-studiolive-api-simple-api": "featherbear/presonus-studiolive-api-simple-api#0c0306aee447d17dd5638184713ead6eeafdcb58",
+    "presonus-studiolive-api-simple-api": "featherbear/presonus-studiolive-api-simple-api#f22983d",
     "sucrase": "^3.20.3"
   }
 }
