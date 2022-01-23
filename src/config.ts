@@ -1,23 +1,22 @@
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { ChannelSelector } from 'presonus-studiolive-api-simple-api'
+import { ControllerType, NoteAction } from './types/configTypes'
 
 let configPath = join(__dirname, '../map.json')
-
-export type NoteAction = 'mute' | 'unmute'
 
 const store: {
     controllers: {
         [controllerID: string]: {
-            type: 'volume' | 'pan'
+            type: typeof ControllerType[number]
             selector: ChannelSelector
         }
     },
     notes: {
         [noteID: string]: {
             latch?: boolean
-            onPress: NoteAction
-            onRelease?: NoteAction | null
+            onPress: typeof NoteAction[number]
+            onRelease?: typeof NoteAction[number] | null
             selector: ChannelSelector
         }
     }
