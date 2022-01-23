@@ -17,10 +17,24 @@ globalThis.logger = bunyan.createLogger({
 	level: dev ? 'debug' : 'info'
 })
 
-if (!env.CONSOLE_HOST) {
-	logger.error("CONSOLE_HOST not defined, exiting")
-	process.exit(1)
+function assertEnv(key: keyof typeof env, ...additionalChecks: ((input: (typeof env)[typeof key]) => (string) | void)[]) {
+
+	if (!env[key]) {
+		logger.error(`${key} variable not defined, exiting`)
+		process.exit(1)
+	}
+
+	for (let check of additionalChecks ?? []) {
+		let res = check(env[key])
+		if (!res) continue;
+		logger.error({ error: res }, `Invalid value for variable ${key}`)
+		process.exit(1)
+	}
 }
+
+assertEnv('CONSOLE_HOST')
+assertEnv('MIDI_DEVICE')
+assertEnv('MIDI_CHANNEL', (c) => (c < 0 || c > 15) && "Value must be between 0 and 15")
 
 
 
@@ -50,9 +64,9 @@ if (env.SERVER_ENABLE) {
 		}
 	}))
 	app.listen(env.SERVER_PORT, env.SERVER_HOST, function () {
-			const { address, port } = this.address()
-			logger.info(`Web server listening on ${address}:${port}`)
-		});
+		const { address, port } = this.address()
+		logger.info(`Web server listening on ${address}:${port}`)
+	});
 }
 
 studioliveService.connect([env.CONSOLE_HOST, env.CONSOLE_PORT]).then(() => {

@@ -11,6 +11,9 @@ const Schema = {
     CONSOLE_PORT: { type: 'number', default: 53000 },
     SERVER_HOST: { type: 'string', default: "0.0.0.0" },
 
+    MIDI_DEVICE: { type: 'string' },
+    MIDI_CHANNEL: { type: 'number' },
+
     SERVER_PORT: {
         /**
          * Sort of doesn't work because Sapper uses port 3000 for the internal .fetch() etc
@@ -18,6 +21,7 @@ const Schema = {
         type: 'number',
         default: 0
     },
+
     SERVER_ENABLE: { type: 'boolean', default: false },
     SERVER_WEBMIDI: { type: 'boolean', default: false },
     SERVER_WEBMIDI_EXCLUSIVE: { type: 'boolean', default: false },
