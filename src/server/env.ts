@@ -10,7 +10,14 @@ const Schema = {
     CONSOLE_HOST: { type: 'string' },
     CONSOLE_PORT: { type: 'number', default: 53000 },
     SERVER_HOST: { type: 'string', default: "0.0.0.0" },
-    SERVER_PORT: { type: 'number', default: 0 },
+
+    SERVER_PORT: {
+        /**
+         * Sort of doesn't work because Sapper uses port 3000 for the internal .fetch() etc
+         **/
+        type: 'number',
+        default: 0
+    },
     SERVER_ENABLE: { type: 'boolean', default: false },
     SERVER_WEBMIDI: { type: 'boolean', default: false },
     SERVER_WEBMIDI_EXCLUSIVE: { type: 'boolean', default: false },

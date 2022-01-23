@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "app-root-path": "^3.0.0",
+    "body-parser": "^1.19.1",
     "bunyan": "^1.8.15",
     "compression": "^1.7.1",
     "dotenv": "^14.2.0",

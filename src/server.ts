@@ -2,6 +2,7 @@ import env from './server/env'
 import sirv from 'sirv';
 import express from 'express';
 import compression from 'compression';
+import bodyParser from 'body-parser'
 import * as sapper from '@sapper/server';
 import bunyan from 'bunyan'
 import studioliveService from './server/studioliveService'
@@ -29,7 +30,8 @@ if (env.SERVER_ENABLE) {
 	let app = express()
 	app.use(
 		compression({ threshold: 0 }),
-		sirv('static', { dev })
+		sirv('static', { dev }),
+		bodyParser.json(),
 	)
 
 
