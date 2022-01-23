@@ -30,7 +30,7 @@ const Resolved: {
     [key]: ({
         'string': (v) => v,
         'number': Number.parseInt,
-        'boolean': Boolean
+        'boolean': (v: string) => v.toLowerCase() === 'true'
     }[opts.type as string] || opts.type as Function)?.(process.env[key]) ?? opts.default
 }), {}) as any
 
