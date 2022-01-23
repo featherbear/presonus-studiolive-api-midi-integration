@@ -12,7 +12,7 @@
 <script lang="ts">
   import ControllerRow from "../components/configure/ControllerRow.svelte";
   import NoteRow from "../components/configure/NoteRow.svelte";
-  
+
   import type config from "../server/config";
   export let map: typeof config;
   export let device: { device: string; channel: number };
@@ -60,8 +60,15 @@
   </thead>
   <tbody>
     {#each currentMap.controllers as data}
-      <ControllerRow bind:data />
+      <ControllerRow {data} />
     {/each}
+    <ControllerRow
+      class="newEntry"
+      on:change={({ detail: { data, reset } }) => {
+        currentMap.controllers = [...currentMap.controllers, data];
+        reset();
+      }}
+    />
   </tbody>
 </table>
 
@@ -84,7 +91,24 @@
     {#each currentMap.notes as data}
       <NoteRow {data} />
     {/each}
+    <NoteRow
+      class="newEntry"
+      on:change={({ detail: { data, reset } }) => {
+        currentMap.notes = [...currentMap.notes, data];
+        reset();
+      }}
+    />
   </tbody>
 </table>
 
 <button on:click={handleSave}>Save</button>
+
+<style lang="scss">
+  :global(.newEntry) {
+    opacity: 0.3;
+    transition: opacity 0.2s;
+    &:hover {
+      opacity: 1;
+    }
+  }
+</style>
