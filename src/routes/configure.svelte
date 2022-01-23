@@ -10,6 +10,9 @@
 </script>
 
 <script lang="ts">
+  import ControllerRow from "../components/configure/ControllerRow.svelte";
+  import NoteRow from "../components/configure/NoteRow.svelte";
+  
   import type config from "../server/config";
   export let map: typeof config;
   export let device: { device: string; channel: number };
@@ -18,8 +21,6 @@
     controllers: Object.entries(map.controllers),
     notes: Object.entries(map.notes),
   };
-
-  import * as configTypes from "../types/configTypes";
 
   let lastSelected = {
     midiDevice: null,
@@ -58,23 +59,8 @@
     </tr>
   </thead>
   <tbody>
-    {#each currentMap.controllers as [controlID, { type, selector }], idx}
-      <tr>
-        <td>
-          <input type="number" bind:value={controlID} min="0" max="127" />
-        </td>
-        <td>
-          <select bind:value={type}>
-            {#each configTypes.ControllerType as type}
-              <option value={type}
-                >{type.replace(/^(.)/g, (f) => f.toUpperCase())}</option
-              >
-            {/each}
-          </select>
-          {type}</td
-        >
-        <td>{JSON.stringify(selector)}</td>
-      </tr>
+    {#each currentMap.controllers as data}
+      <ControllerRow bind:data />
     {/each}
   </tbody>
 </table>
@@ -95,35 +81,8 @@
     </tr>
   </thead>
   <tbody>
-    {#each currentMap.notes as [noteID, { latch, onPress, onRelease, selector }], idx}
-      <tr>
-        <td>
-          <input type="number" bind:value={noteID} min="0" max="127" />
-        </td>
-        <td>
-          <input type="checkbox" bind:checked={latch} />
-        </td>
-        <td>
-          <select bind:value={onPress}>
-            {#each configTypes.NoteAction as action}
-              <option value={action}
-                >{action.replace(/^(.)/g, (f) => f.toUpperCase())}</option
-              >
-            {/each}
-          </select>
-        </td>
-
-        <td>
-          <select bind:value={onRelease}>
-            {#each configTypes.NoteAction as action}
-              <option value={action}
-                >{action.replace(/^(.)/g, (f) => f.toUpperCase())}</option
-              >
-            {/each}
-          </select>
-        </td>
-        <td>{JSON.stringify(selector)}</td>
-      </tr>
+    {#each currentMap.notes as data}
+      <NoteRow {data} />
     {/each}
   </tbody>
 </table>
