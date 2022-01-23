@@ -1,8 +1,9 @@
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import type { ChannelSelector } from 'presonus-studiolive-api-simple-api'
+import { path } from 'app-root-path'
 
-let configPath = join(__dirname, '../../map.json')
+let configPath = join(path, 'map.json')
 
 export type NoteAction = 'mute' | 'unmute'
 
@@ -21,7 +22,9 @@ const store: {
             selector: ChannelSelector
         }
     }
-} = JSON.parse(readFileSync(configPath).toString('utf8'))
+} = (existsSync(configPath) && JSON.parse(readFileSync(configPath).toString('utf8')))
+    || { controllers: {}, notes: {} }
+
 
 export default store
 export function updateStore() {
