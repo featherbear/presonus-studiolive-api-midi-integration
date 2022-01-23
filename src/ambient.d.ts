@@ -37,3 +37,10 @@ declare module "*.webp" {
 	const value: string;
 	export default value;
 }
+
+
+import type bunyan from 'bunyan'
+declare global {
+    var logger: bunyan
+}
+
