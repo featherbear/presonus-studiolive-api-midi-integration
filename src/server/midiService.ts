@@ -6,13 +6,37 @@ export default (() => ({
     discover() {
         return easymidi.getInputs()
     },
-    connect(client: API, deviceName?: string) {
-        (deviceName ? [deviceName] : easymidi.getInputs()).forEach(deviceName => {
+    createVirtualPassthrough(name: string) {
+        let device = new easymidi.Input(name + '-virtual', true)
+        device.isPortOpen = () => true
 
-            logger.info({ deviceName }, "Attaching to MIDI device")
-            let inputDevice = new easymidi.Input(deviceName)
+        let lastTime = new Date()
+        return [device, function (bytes: number[]) {
+            let currentTime = new Date()
+            device['_input'].emit('message', (currentTime.getTime() - lastTime.getTime()) / 1000, bytes)
+            lastTime = currentTime
+        }] as const
+    },
+    connect(client: API, opts?: { device?: string, eventCallback?: (event: any) => void }) {
+        let devices = []
 
-            inputDevice.on('noteon', function (data) {
+        if (!!opts?.device) {
+            if (typeof opts?.device === 'object' && opts?.device['constructor']['name'] !== 'Input') {
+                throw new Error("`device` must be a string or a MIDI input device")
+            }
+
+            devices = [opts?.device]
+        } else {
+            devices = easymidi.getInputs()
+        }
+
+        devices.forEach((_device: string | easymidi.Input) => {
+            // Log before actual functionality
+            logger.info({ deviceName: (_device as easymidi.Input)?.name ?? _device }, "Attaching to MIDI device")
+
+            let device = (typeof _device === 'string') ? new easymidi.Input(_device) : _device
+
+            device.on('noteon', function (data) {
                 let note = data.note.toString()
 
                 let noteConfig = config.notes[note]
@@ -27,7 +51,7 @@ export default (() => ({
                 }
             })
 
-            inputDevice.on('noteoff', function (data) {
+            device.on('noteoff', function (data) {
                 let note = data.note.toString()
 
                 let noteConfig = config.notes[note]
@@ -37,7 +61,7 @@ export default (() => ({
                 handleNoteAction(noteConfig.onRelease, noteConfig)
             })
 
-            inputDevice.on('cc', function (data) {
+            device.on('cc', function (data) {
                 let controller = data.controller.toString()
 
                 let controllerConfig = config.controllers[controller]
@@ -50,17 +74,18 @@ export default (() => ({
                 }
             })
 
+            if (typeof opts?.eventCallback === 'function') {
+                device.on('message' as any, (data) => opts.eventCallback(data))
+            }
+
             let closeCheckTimer =
                 setInterval(() => {
-                    if (!inputDevice.isPortOpen()) {
+                    if (!device.isPortOpen()) {
                         clearInterval(closeCheckTimer)
-                        logger.warn({ deviceName }, "MIDI device was disconnected")
+                        logger.warn({ device: device.name }, "MIDI device was disconnected")
                     }
                 }, 2000)
         })
-
-
-
 
         let noteLatches = {}
 

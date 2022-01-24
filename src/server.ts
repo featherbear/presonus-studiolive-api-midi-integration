@@ -36,22 +36,41 @@ assertEnv('CONSOLE_HOST')
 assertEnv('MIDI_DEVICE')
 assertEnv('MIDI_CHANNEL', (c) => (c < 0 || c > 15) && "Value must be between 0 and 15")
 
+import { Server as HTTPServer } from 'http'
+import { Server as SocketIOServer } from 'socket.io'
 
+let virtualMIDIdevice;
+let midiFeedbackFunction: (data: any) => void = () => { }
 
 if (env.SERVER_ENABLE) {
 	logger.info("Starting web server")
 
-	let app = express()
+	const app = express() // Express server
+	const server = new HTTPServer(app) // HTTP server
+	const io = new SocketIOServer(server, { path: '/s' })
+
+
+	// Feedback
+	midiFeedbackFunction = (data) => io.to('feedback').emit('feedback', data)
+	io.on('connection', socket => socket.join("feedback"))
+
 	app.use(
 		compression({ threshold: 0 }),
 		sirv('static', { dev }),
 		bodyParser.json(),
 	)
 
-
 	if (env.SERVER_WEBMIDI || env.SERVER_WEBMIDI_EXCLUSIVE) {
 		logger.info("Enabling WebMIDI support")
-		// TODO: Add websocket / socket.io plugin for express
+		const [device, send] = midiService.createVirtualPassthrough('webmidi')
+
+		io.of('/webmidi').on('connection', (conn) => {
+			logger.info({ conn: conn.id, address: conn.handshake.address }, "New WebMIDI client connected")
+			conn.on('message', (bytes) => send(bytes))
+		})
+
+		virtualMIDIdevice = device
+		logger.info("Created virtual MIDI device")
 	}
 
 	app.use(sapper.middleware({
@@ -63,7 +82,8 @@ if (env.SERVER_ENABLE) {
 			}
 		}
 	}))
-	app.listen(env.SERVER_PORT, env.SERVER_HOST, function () {
+
+	server.listen(env.SERVER_PORT, env.SERVER_HOST, function () {
 		const { address, port } = this.address()
 		logger.info(`Web server listening on ${address}:${port}`)
 	});
@@ -76,7 +96,19 @@ studioliveService.connect([env.CONSOLE_HOST, env.CONSOLE_PORT]).then(() => {
 		logger.warn("Local MIDI listener not started because WebMIDI mode was set to exclusive")
 	} else {
 		studioliveService.withClient(client => {
-			midiService.connect(client)
+			midiService.connect(client, {
+				eventCallback: midiFeedbackFunction
+			})
+		})
+	}
+
+	if (env.SERVER_WEBMIDI) {
+		studioliveService.withClient(client => {
+			midiService.connect(client, {
+				device: virtualMIDIdevice,
+				eventCallback: midiFeedbackFunction
+			})
 		})
 	}
 })
+

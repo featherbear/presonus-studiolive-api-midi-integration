@@ -44,3 +44,5 @@ declare global {
     var logger: bunyan
 }
 
+// Explicit import???
+import '@types/webmidi'
