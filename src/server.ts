@@ -69,6 +69,8 @@ if (env.SERVER_ENABLE) {
 	});
 }
 
+logger.info({devices: midiService.discover()}, "Found MIDI devices")
+
 studioliveService.connect([env.CONSOLE_HOST, env.CONSOLE_PORT]).then(() => {
 	if (env.SERVER_WEBMIDI_EXCLUSIVE) {
 		logger.warn("Local MIDI listener not started because WebMIDI mode was set to exclusive")

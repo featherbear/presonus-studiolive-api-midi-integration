@@ -3,7 +3,9 @@ import config, { NoteAction } from './config'
 import type API from 'presonus-studiolive-api-simple-api'
 
 export default (() => ({
-
+    discover() {
+        return easymidi.getInputs()
+    },
     connect(client: API, deviceName?: string) {
         (deviceName ? [deviceName] : easymidi.getInputs()).forEach(deviceName => {
 
