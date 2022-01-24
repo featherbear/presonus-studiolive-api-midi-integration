@@ -27,6 +27,7 @@ const store: {
 
 
 export default store
-export function updateStore() {
+export function updateStore(data?: Object) {
+    if (data) Object.assign(store, data)
     writeFileSync(configPath, JSON.stringify(store, null, 4), 'utf8')
 }

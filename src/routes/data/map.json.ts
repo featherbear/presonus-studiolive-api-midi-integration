@@ -5,7 +5,7 @@ export async function get(req, res) {
 }
 
 export async function put(req, res) {
-    console.log(req.body);
-    // updateStore
-    return res.end(":)")
+    logger.info({ config: req.body }, "Writing configuration data")
+    updateStore(req.body)
+    return res.end(JSON.stringify({ json: true }))
 }
