@@ -1,5 +1,6 @@
 {
   "name": "presonus-studiolive-api-midi-integration",
+  "version": "1.0.0",
   "scripts": {
     "dev": "sapper dev | bunyan",
     "build": "sapper build --legacy",
