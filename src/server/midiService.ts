@@ -69,7 +69,7 @@ export default (() => ({
 
                 switch (controllerConfig.type) {
                     case 'volume': {
-                        return client.setLevel(controllerConfig.selector, Math.trunc(data.value / 127 * 100))
+                        return client.setChannelVolumeLinear(controllerConfig.selector, Math.trunc(data.value / 127 * 100))
                     }
                 }
             })
@@ -94,10 +94,10 @@ export default (() => ({
 
             switch (action) {
                 case 'mute': {
-                    return client.mute(noteConfig.selector, true)
+                    return client.setMute(noteConfig.selector, true)
                 }
                 case 'unmute': {
-                    return client.mute(noteConfig.selector, false)
+                    return client.setMute(noteConfig.selector, false)
                 }
             }
         }
