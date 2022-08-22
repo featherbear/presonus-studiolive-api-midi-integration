@@ -47,7 +47,7 @@
     "dotenv": "^14.2.0",
     "easymidi": "^2.1.0",
     "express": "^4.17.2",
-    "presonus-studiolive-api-simple-api": "featherbear/presonus-studiolive-api-simple-api#f22983d477afc14dd193ba72b3da1c3dd0073655",
+    "presonus-studiolive-api-simple-api": "featherbear/presonus-studiolive-api-simple-api#76d325c6445ecdd11295d24d2f3da41a8b81d022",
     "sirv": "^1.0.0",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1"

@@ -2215,16 +2215,16 @@ picomatch@^2.0.4, picomatch@^2.2.1, picomatch@^2.2.2:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.3.1.tgz#3ba3833733646d9d3e4995946c1365a67fb07a42"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
 
-presonus-studiolive-api-simple-api@featherbear/presonus-studiolive-api-simple-api#f22983d477afc14dd193ba72b3da1c3dd0073655:
+presonus-studiolive-api-simple-api@featherbear/presonus-studiolive-api-simple-api#76d325c6445ecdd11295d24d2f3da41a8b81d022:
   version "1.0.0"
-  resolved "https://codeload.github.com/featherbear/presonus-studiolive-api-simple-api/tar.gz/f22983d477afc14dd193ba72b3da1c3dd0073655"
+  resolved "https://codeload.github.com/featherbear/presonus-studiolive-api-simple-api/tar.gz/76d325c6445ecdd11295d24d2f3da41a8b81d022"
   dependencies:
-    presonus-studiolive-api featherbear/presonus-studiolive-api#000c08b
+    presonus-studiolive-api featherbear/presonus-studiolive-api#dfa3d5d4b09e36412d71ed00c9a4f89324d76e71
     typescript "^4.5.5"
 
-presonus-studiolive-api@featherbear/presonus-studiolive-api#000c08b:
-  version "1.0.6"
-  resolved "https://codeload.github.com/featherbear/presonus-studiolive-api/tar.gz/000c08bda3832a3917dca8157f09e66c6e51d48b"
+presonus-studiolive-api@featherbear/presonus-studiolive-api#dfa3d5d4b09e36412d71ed00c9a4f89324d76e71:
+  version "1.1.0"
+  resolved "https://codeload.github.com/featherbear/presonus-studiolive-api/tar.gz/dfa3d5d4b09e36412d71ed00c9a4f89324d76e71"
   dependencies:
     "@types/node" "^14.14.6"
     queue "^6.0.1"
