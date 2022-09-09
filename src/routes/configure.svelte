@@ -14,8 +14,12 @@
   import NoteRow from "../components/configure/NoteRow.svelte";
 
   import type config from "../server/config";
-  export let map: typeof config;
-  export let device: { device: string; channel: number };
+  
+  import type DeviceJSON from "./data/_DeviceJSON";
+  import type MapJSON from "./data/_MapJSON";
+
+  export let device: DeviceJSON;
+  export let map: MapJSON;
 
   let currentMap = {
     controllers: Object.entries(map.controllers),

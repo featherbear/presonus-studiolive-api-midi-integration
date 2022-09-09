@@ -4,7 +4,7 @@
   import { stores } from "@sapper/app";
   const { session } = stores();
 
-  let webMIDIenabled =  $session.capabilities.webmidi
+  let webMIDIenabled = $session.capabilities.webmidi;
 </script>
 
 <nav>
@@ -15,25 +15,16 @@
       >
     </li>
     <li>
-      <a aria-current={segment === "about" ? "page" : undefined} href="about"
-        >about</a
-      >
-    </li>
-      <li>
-        <a
-          aria-current={segment === "webmidi" ? "page" : undefined}
-          href={webMIDIenabled ? "webmidi" : 'javascript:'}>WebMIDI {webMIDIenabled ? '' : "(disabled)"}</a
-        >
-      </li>
-
-    <!-- for the blog link, we're using rel=prefetch so that Sapper prefetches
-		     the blog data when we hover over the link or tap it on a touchscreen -->
-    <li>
       <a
-        rel="prefetch"
-        aria-current={segment === "blog" ? "page" : undefined}
-        href="blog">blog</a
+        aria-current={segment === "webmidi" ? "page" : undefined}
+        href={webMIDIenabled ? "webmidi" : "javascript:"}
+        on:click={() => {
+          if (webMIDIenabled) return;
+          alert("WebMIDI is not enabled in the server configuration")
+        }}
       >
+        WebMIDI {webMIDIenabled ? "" : "(disabled)"}
+      </a>
     </li>
   </ul>
 </nav>
