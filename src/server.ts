@@ -104,9 +104,15 @@ studioliveService.connect([env.CONSOLE_HOST, env.CONSOLE_PORT]).then(() => {
 		logger.warn("Local MIDI listener not started because WebMIDI mode was set to exclusive")
 	} else {
 		studioliveService.withClient(client => {
-			midiService.connect(client, {
-				eventCallback: midiFeedbackFunction
-			})
+			try {
+				midiService.connect(client, {
+					device: env.MIDI_DEVICE,
+					eventCallback: midiFeedbackFunction
+				})
+			} catch (e) {
+				logger.fatal(e.message)
+				process.exit(2)
+			}
 		})
 	}
 
