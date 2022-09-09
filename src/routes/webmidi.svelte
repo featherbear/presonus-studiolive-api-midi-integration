@@ -16,6 +16,8 @@
 
     console.log("Connecting to MIDI controllers");
 
+    if (!navigator.requestMIDIAccess) return;
+
     try {
       let midiAccess = await navigator.requestMIDIAccess();
       for (let input of midiAccess.inputs.values()) {
@@ -37,7 +39,13 @@
   });
 </script>
 
+{#if process.browser}
+  {#if navigator.requestMIDIAccess}
+    WebMIDI page
+  {:else}
+    WebMIDI not supported on this browser.
+  {/if}
+{/if}
+
 <style lang="scss">
 </style>
-
-WebMIDI page
