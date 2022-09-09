@@ -7,13 +7,15 @@ export default (() => ({
         return easymidi.getInputs()
     },
     createVirtualPassthrough(name: string) {
-        let device = new easymidi.Input(name + '-virtual', true)
-        device.isPortOpen = () => true
+        let inputDevice = new easymidi.Input(name + '-virtual', true)
+        let outputDevice = new easymidi.Output(name + '-virtual', true)
+
+        inputDevice.isPortOpen = () => true
 
         let lastTime = new Date()
-        return [device, function (bytes: number[]) {
+        return [inputDevice, outputDevice, function sendInput(bytes: number[]) {
             let currentTime = new Date()
-            device['_input'].emit('message', (currentTime.getTime() - lastTime.getTime()) / 1000, bytes)
+            inputDevice['_input'].emit('message', (currentTime.getTime() - lastTime.getTime()) / 1000, bytes)
             lastTime = currentTime
         }] as const
     },
