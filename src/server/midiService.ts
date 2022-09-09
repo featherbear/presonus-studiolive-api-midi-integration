@@ -2,6 +2,8 @@ import easymidi from 'easymidi'
 import type { ControlChange, Note } from 'easymidi'
 import config, { NoteAction } from './config'
 import type API from 'presonus-studiolive-api-simple-api'
+import { parseChannelString } from 'presonus-studiolive-api/dist/lib/util/channelUtil'
+import EventEmitter from 'events'
 
 export default (() => ({
     discover() {
@@ -20,7 +22,7 @@ export default (() => ({
             lastTime = currentTime
         }] as const
     },
-    connect(client: API, opts?: { device?: string, eventCallback?: (event: any) => void }) {
+    connect(client: API, opts?: { device?: string, feedbackDevice?: easymidi.Output, eventCallback?: (event: any) => void }) {
         let devices = []
 
         if (!!opts?.device) {
@@ -32,6 +34,18 @@ export default (() => ({
         } else {
             devices = easymidi.getInputs()
         }
+
+        let outputDevices = easymidi.getOutputs()
+
+        let evtProxy_mute = new EventEmitter()
+        let evtProxy_level = new EventEmitter()
+        client.on('level', function (data) {
+            evtProxy_level.emit(parseChannelString(data.channel), data.level)
+        })
+        client.on('mute', function (data) {
+            evtProxy_mute.emit(parseChannelString(data.channel), data.status)
+        })
+
 
         devices.forEach((_device: string | easymidi.Input) => {
             // Log before actual functionality
@@ -77,8 +91,65 @@ export default (() => ({
                 }
             })
 
+            // Global feedback
             if (typeof opts?.eventCallback === 'function') {
-                device.on('message' as any, (data) => opts.eventCallback(data))
+                device.on('message' as any, function (data) {
+                    opts.eventCallback({ ...data, device: device.name })
+                })
+            }
+
+
+            let outputDevice: easymidi.Output
+            if (opts.feedbackDevice || outputDevices.includes(device.name)) {
+                outputDevice = opts.feedbackDevice || new easymidi.Output(device.name)
+
+                for (let [note, obj] of Object.entries(config.notes)) {
+                    if (obj.onPress === 'mute') {
+                        function update(state) {
+                            let isMute = state ?? (client.state.get(parseChannelString(obj.selector) + '/mute') || false)
+
+                            if (isMute) {
+                                outputDevice.send('noteon', {
+                                    channel: 10, // TODO:
+                                    note: Number(note),
+                                    velocity: 127
+                                })
+                            } else {
+                                outputDevice.send('noteoff', {
+                                    channel: 10, // TODO:
+                                    note: Number(note),
+                                    velocity: 0
+                                })
+                            }
+                        }
+
+                        evtProxy_mute.on(parseChannelString(obj.selector), update)
+                        update()
+
+
+                    }
+                }
+
+                for (let [controller, obj] of Object.entries(config.controllers)) {
+                    if (obj.type === 'volume') {
+                        function update(level) {
+                            let vol100 = level ?? (client.state.get(parseChannelString(obj.selector) + '/volume') || 0)
+                            let vol = Math.trunc(vol100 * 127 / 100)
+                            outputDevice.send('cc', {
+                                channel: 10, // TODO:
+                                controller: Number(controller),
+                                value: vol
+                            })
+                        }
+
+                        evtProxy_level.on(parseChannelString(obj.selector), update)
+                        update()
+
+                    }
+                }
+
+            } else {
+                logger.debug("Skip feedback device setup for " + device.name)
             }
 
             let closeCheckTimer =
