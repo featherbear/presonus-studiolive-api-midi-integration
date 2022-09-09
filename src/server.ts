@@ -51,7 +51,7 @@ if (env.SERVER_ENABLE) {
 	const io = new SocketIOServer(server, { path: '/s' })
 
 
-	// Feedback
+	// Global feedback
 	midiFeedbackFunction = (data) => io.to('feedback').emit('feedback', data)
 	io.on('connection', socket => socket.join("feedback"))
 
@@ -102,7 +102,7 @@ if (env.SERVER_ENABLE) {
 	});
 }
 
-logger.info({devices: midiService.discover()}, "Found MIDI devices")
+logger.info({ devices: midiService.discover() }, "Found MIDI devices")
 
 studioliveService.connect([env.CONSOLE_HOST, env.CONSOLE_PORT]).then(() => {
 	if (env.SERVER_WEBMIDI_EXCLUSIVE) {

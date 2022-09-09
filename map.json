@@ -138,6 +138,80 @@
         "type": "LINE",
         "channel": 8
       }
+    },
+    "8": {
+      "latch": false,
+      "__NOTE__": "Example for momentary push mute button (push to kill), perhaps a panic mute?",
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 1
+      }
+    },
+    "9": {
+      "latch": false,
+      "__NOTE__": "Example for momentary push unmute button (push to talk)",
+      "onPress": "unmute",
+      "onRelease": "mute",
+      "selector": {
+        "type": "LINE",
+        "channel": 2
+      }
+    },
+    "10": {
+      "latch": true,
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 3
+      }
+    },
+    "11": {
+      "latch": true,
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 4
+      }
+    },
+    "12": {
+      "latch": true,
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 5
+      }
+    },
+    "13": {
+      "latch": true,
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 6
+      }
+    },
+    "14": {
+      "latch": true,
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 7
+      }
+    },
+    "15": {
+      "latch": true,
+      "onPress": "mute",
+      "onRelease": "unmute",
+      "selector": {
+        "type": "LINE",
+        "channel": 8
+      }
     }
   }
 }
