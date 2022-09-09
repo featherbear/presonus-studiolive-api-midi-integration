@@ -4,24 +4,26 @@
       return this.error(405, "WebMIDI is not enabled by the server");
     }
 
-    let device = this.fetch('data/device.json').then(r=>r.json())
-    let config = this.fetch('data/map.json').then(r=>r.json())
+    let device = this.fetch("data/device.json").then((r) => r.json());
+    let config = this.fetch("data/map.json").then((r) => r.json());
 
     return {
       device: await device,
-      config: await config
-    }
+      config: await config,
+    };
   }
 </script>
 
 <script lang="ts">
-  import type DeviceJSON from './data/_DeviceJSON'
-  import type MapJSON from './data/_MapJSON'
+  import type DeviceJSON from "./data/_DeviceJSON";
+  import type MapJSON from "./data/_MapJSON";
 
   export let device: DeviceJSON;
   export let config: MapJSON;
 
   import { onMount } from "svelte";
+
+  type Timeout = number;
 
   /**
    * When a MIDI control is made, raw MIDI bytes are transmitted over the WebSockets connection
@@ -30,9 +32,9 @@
    *   whose MIDI bytes are then received by the web client via WebSockets.
    * There can exist a decent delay between this roundtrip, so we will ignore any received MIDI bytes
    *   of a channel that was recently touched by the MIDI device
+   * 
+   * TODO: Debounce per WebMIDI device
    */
-
-  type Timeout = number;
   let debouncer = new (class {
     #locks: { [identifier: number]: Timeout };
     #queue: { [identifier: number]: Function };
@@ -46,11 +48,11 @@
      * Gonna cheat and just use the first byte, though this limits the debounce to just the action type
      * TODO: Parse the actual MIDI bytes?
      */
-    #extractIdentifier(bytes: Uint8Array) {
+    #extractIdentifier(bytes: Uint8Array | number[]) {
       return bytes[0];
     }
 
-    queue(bytes: Uint8Array, callback: Function) {
+    queue(bytes: Uint8Array | number[], callback: Function) {
       let identifier = this.#extractIdentifier(bytes);
 
       // No debounce needed, fire asynchronously immediately
@@ -64,9 +66,9 @@
     /**
      * Register a note/control as touched
      */
-    touch(bytes: Uint8Array) {
+    touch(bytes: Uint8Array | number[]) {
       let identifier = this.#extractIdentifier(bytes);
-      
+
       // Expire existing debounce timer
       if (this.#locks[identifier]) clearTimeout(this.#locks[identifier]);
 
@@ -76,16 +78,18 @@
         // Fire callback asynchronously if it exists
         if (callback) {
           delete this.#queue[identifier];
-          
-          console.debug('(callback) Asserting state');
+
+          console.debug("(callback) Asserting state");
           (async () => callback())();
         }
 
         // Cleanup
         delete this.#locks[identifier];
-      }, 500);
+      }, 50);
     }
   })();
+
+  let latches: { [identifier: string]: boolean } = {};
 
   onMount(async () => {
     let SocketIO = await import("socket.io-client");
@@ -110,15 +114,50 @@
         // TODO: Select which MIDI device is in use
 
         input.addEventListener("midimessage", function ({ data }) {
-          console.debug("Sending MIDI bytes", data);
-          debouncer.touch(data);
-          client.send(data);
+          let newData = [...data];
+
+          // FIXME: Latching is kinda a hack, should probably handle this server side
+          if ([0x8, 0x9].includes(data[0] >> 4) && config.notes[data[1]]?.latch) {
+            // TODO: Handle channel
+            if (data[0] == 154) {
+              if (latches[data[1]]) {
+                
+                // Instant state
+                for (let output of midiAccess.outputs.values()) {
+                  if (output.name != input.name) continue;
+                  output.send([138, data[1], 0]);
+                  break;
+                }
+              }
+              latches[data[1]] = !latches[data[1]];
+            } else if (data[0] == 138) {
+              if (latches[data[1]]) {
+                // Force back on
+                newData = [154, data[1], 127];
+
+                for (let output of midiAccess.outputs.values()) {
+                  if (output.name != input.name) continue;
+                  output.send(newData);
+                  break;
+                }
+              }
+
+              return;
+            }
+          }
+
+          console.debug("Sending MIDI bytes", newData);
+
+          debouncer.touch(newData);
+          client.send(newData);
         });
       }
 
       client.on("message", function (data) {
         console.debug("Received MIDI bytes", data);
         // TODO: Select which MIDI device is in use
+
+        // TODO: Would be nice to know the current latched values
 
         debouncer.queue(data, () => {
           for (let output of midiAccess.outputs.values()) {

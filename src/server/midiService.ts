@@ -104,7 +104,7 @@ export default (() => ({
                 outputDevice = opts.feedbackDevice || new easymidi.Output(device.name)
 
                 for (let [note, obj] of Object.entries(config.notes)) {
-                    if (obj.onPress === 'mute') {
+                    if (['mute', 'unmute'].includes(obj.onPress)) {
                         function update(state) {
                             let isMute = state ?? (client.state.get(parseChannelString(obj.selector) + '/mute') || false)
 
@@ -125,8 +125,6 @@ export default (() => ({
 
                         evtProxy_mute.on(parseChannelString(obj.selector), update)
                         update()
-
-
                     }
                 }
 
@@ -165,6 +163,8 @@ export default (() => ({
 
         function handleNoteAction(action: NoteAction, noteConfig: typeof config['notes'][string]) {
             if (!action) return
+
+            console.log(action, noteConfig)
 
             switch (action) {
                 case 'mute': {
