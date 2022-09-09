@@ -61,7 +61,7 @@ if (env.SERVER_ENABLE) {
 		bodyParser.json(),
 	)
 
-	if (env.SERVER_WEBMIDI || env.SERVER_WEBMIDI_EXCLUSIVE) {
+	if (env.SERVER_WEBMIDI) {
 		logger.info("Enabling WebMIDI support")
 		const [inputDevice, outputDevice, send] = midiService.createVirtualPassthrough('webmidi')
 
@@ -79,13 +79,18 @@ if (env.SERVER_ENABLE) {
 		virtualMIDIdevice = inputDevice
 		virtualMIDIFeedback = outputDevice
 		logger.info("Created virtual MIDI device")
+	} else {
+		if (env.SERVER_WEBMIDI_EXCLUSIVE) {
+			logger.fatal("SERVER_WEBMIDI_EXCLUSIVE was set however SERVER_WEBMIDI was not")
+			process.exit(1)
+		}
 	}
 
 	app.use(sapper.middleware({
 		session: (req, res) => {
 			return {
 				capabilities: {
-					webmidi: !!(env.SERVER_WEBMIDI || env.SERVER_WEBMIDI_EXCLUSIVE)
+					webmidi: !!env.SERVER_WEBMIDI
 				}
 			}
 		}
