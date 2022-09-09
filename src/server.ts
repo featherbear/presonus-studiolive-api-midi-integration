@@ -77,7 +77,7 @@ if (env.SERVER_ENABLE) {
 		session: (req, res) => {
 			return {
 				capabilities: {
-					webmidi: env.SERVER_WEBMIDI || env.SERVER_WEBMIDI_EXCLUSIVE
+					webmidi: !!(env.SERVER_WEBMIDI || env.SERVER_WEBMIDI_EXCLUSIVE)
 				}
 			}
 		}
