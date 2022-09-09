@@ -1,4 +1,5 @@
 import easymidi from 'easymidi'
+import type { ControlChange, Note } from 'easymidi'
 import config, { NoteAction } from './config'
 import type API from 'presonus-studiolive-api-simple-api'
 
@@ -38,7 +39,7 @@ export default (() => ({
 
             let device = (typeof _device === 'string') ? new easymidi.Input(_device) : _device
 
-            device.on('noteon', function (data) {
+            device.on('noteon', function (data: Note) {
                 let note = data.note.toString()
 
                 let noteConfig = config.notes[note]
@@ -53,7 +54,7 @@ export default (() => ({
                 }
             })
 
-            device.on('noteoff', function (data) {
+            device.on('noteoff', function (data: Note) {
                 let note = data.note.toString()
 
                 let noteConfig = config.notes[note]
@@ -63,7 +64,7 @@ export default (() => ({
                 handleNoteAction(noteConfig.onRelease, noteConfig)
             })
 
-            device.on('cc', function (data) {
+            device.on('cc', function (data: ControlChange) {
                 let controller = data.controller.toString()
 
                 let controllerConfig = config.controllers[controller]
