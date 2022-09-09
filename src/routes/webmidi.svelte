@@ -1,12 +1,26 @@
 <script context="module">
-  export function preload(_, session) {
+  export async function preload(_, session) {
     if (!session.capabilities.webmidi) {
       return this.error(405, "WebMIDI is not enabled by the server");
+    }
+
+    let device = this.fetch('data/device.json').then(r=>r.json())
+    let config = this.fetch('data/map.json').then(r=>r.json())
+
+    return {
+      device: await device,
+      config: await config
     }
   }
 </script>
 
 <script lang="ts">
+  import type DeviceJSON from './data/_DeviceJSON'
+  import type MapJSON from './data/_MapJSON'
+
+  export let device: DeviceJSON;
+  export let config: MapJSON;
+
   import { onMount } from "svelte";
 
   /**
@@ -121,6 +135,7 @@
 {#if process.browser}
   {#if navigator.requestMIDIAccess}
     WebMIDI page
+    <pre>{JSON.stringify(config, null, 2)}</pre>
   {:else}
     WebMIDI not supported on this browser.
   {/if}
