@@ -40,6 +40,7 @@ import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 
 let virtualMIDIdevice;
+let virtualMIDIFeedback;
 let midiFeedbackFunction: (data: any) => void = () => { }
 
 if (env.SERVER_ENABLE) {
@@ -62,14 +63,21 @@ if (env.SERVER_ENABLE) {
 
 	if (env.SERVER_WEBMIDI || env.SERVER_WEBMIDI_EXCLUSIVE) {
 		logger.info("Enabling WebMIDI support")
-		const [device, send] = midiService.createVirtualPassthrough('webmidi')
+		const [inputDevice, outputDevice, send] = midiService.createVirtualPassthrough('webmidi')
 
 		io.of('/webmidi').on('connection', (conn) => {
 			logger.info({ conn: conn.id, address: conn.handshake.address }, "New WebMIDI client connected")
 			conn.on('message', (bytes) => send(bytes))
 		})
 
-		virtualMIDIdevice = device
+		outputDevice['_output'].sendMessage_ = outputDevice['_output'].sendMessage
+		outputDevice['_output'].sendMessage = function (payload) {
+			io.of('/webmidi').send(payload)
+			outputDevice['_output'].sendMessage_(payload)
+		}
+
+		virtualMIDIdevice = inputDevice
+		virtualMIDIFeedback = outputDevice
 		logger.info("Created virtual MIDI device")
 	}
 
@@ -106,6 +114,7 @@ studioliveService.connect([env.CONSOLE_HOST, env.CONSOLE_PORT]).then(() => {
 		studioliveService.withClient(client => {
 			midiService.connect(client, {
 				device: virtualMIDIdevice,
+				feedbackDevice: virtualMIDIFeedback,
 				eventCallback: midiFeedbackFunction
 			})
 		})
