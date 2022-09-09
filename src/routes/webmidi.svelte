@@ -33,6 +33,14 @@
           client.send(data);
         });
       }
+      client.on("message", function (data) {
+        console.debug("Received MIDI bytes", data);
+        // TODO: Select which MIDI device is in use
+
+          for (let output of midiAccess.outputs.values()) {
+            output.send(data);
+          }
+      });
     } catch (error) {
       console.error("No MIDI access: " + error.code);
     }
