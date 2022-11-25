@@ -1,4 +1,4 @@
-import config from '../../server/config'
+import type config from '../../server/config'
 
 type MapJSON = typeof config
 

@@ -105,7 +105,7 @@ export default (() => ({
 
                 for (let [note, obj] of Object.entries(config.notes)) {
                     if (['mute', 'unmute'].includes(obj.onPress)) {
-                        function update(state) {
+                        function update(state?) {
                             let isMute = state ?? (client.state.get(parseChannelString(obj.selector) + '/mute') || false)
 
                             if (isMute) {
@@ -130,7 +130,7 @@ export default (() => ({
 
                 for (let [controller, obj] of Object.entries(config.controllers)) {
                     if (obj.type === 'volume') {
-                        function update(level) {
+                        function update(level?) {
                             let vol100 = level ?? (client.state.get(parseChannelString(obj.selector) + '/volume') || 0)
                             let vol = Math.trunc(vol100 * 127 / 100)
                             outputDevice.send('cc', {
