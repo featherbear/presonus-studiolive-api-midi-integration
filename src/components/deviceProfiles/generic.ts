@@ -1,7 +1,6 @@
 //  // Log before actual functionality
 //  logger.info({ deviceName: (_device as easymidi.Input)?.name ?? _device }, "Attaching to MIDI device")
 
-//  let device = (typeof _device === 'string') ? new easymidi.Input(_device) : _device
 
 //  device.on('noteon', function (data: Note) {
 //      let note = data.note.toString()

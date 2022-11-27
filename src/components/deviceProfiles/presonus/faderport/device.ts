@@ -1,15 +1,20 @@
 import DeviceBase from "../../DeviceBase";
 import { SysEx_KeepAlive } from "./internal/vendorConstants";
-export default class Device extends DeviceBase {
+
+type ConfigType = {
+    s: string
+}
+
+export default class FaderPortDevice extends DeviceBase<ConfigType> {
     #keepAliveTimer: NodeJS.Timeout
-
-    constructor(...args: ConstructorParameters<typeof DeviceBase>) {
-        super(...args)
-        // this.sendRaw()
-
+    
+    init() {
         this.#keepAliveTimer = setInterval(() => {
-            this.sendRaw(SysEx_KeepAlive)
-        },1000)
+            this.send('sysex', SysEx_KeepAlive)
+        }, 1000)
+    }
+
+    handle() {
     }
 
     destroy() {
