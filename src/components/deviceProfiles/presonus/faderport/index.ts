@@ -1,1 +1,1 @@
-export * from './FaderPortDevice'
+export * from './interface/FaderPortDevice'

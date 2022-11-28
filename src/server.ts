@@ -38,9 +38,9 @@ assertEnv('MIDI_CHANNEL', (c) => (c < 0 || c > 15) && "Value must be between 0 a
 
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
-import FaderPortDevice from './components/deviceProfiles/presonus/faderport/FaderPortDevice';
+import FaderPortDevice from './components/deviceProfiles/presonus/faderport/interface/FaderPortDevice';
 import type DeviceDescriptor from './types/DeviceDescriptor';
-import { FaderBtn } from './components/deviceProfiles/presonus/faderport/internal/vendorConstants';
+import { FaderBtn } from './components/deviceProfiles/presonus/faderport/interface/vendorConstants';
 import type { Input, Output } from './types/easymidiInterop';
 
 let virtualInputMIDI: Input;

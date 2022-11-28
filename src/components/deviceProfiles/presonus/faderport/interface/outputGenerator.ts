@@ -26,15 +26,12 @@ const wrapType: <T extends OutputGenerator>(fn: T, midiType: MidiTypes) => Wrapp
     }
 
 export const setFaderPosition = wrapType(function (fader: Faders16, value14: number) {
-    console.log('incoming values', fader, value14);
-    let res = Buffer.from([0xE0 + fader - 1, ...value14Split(value14)])
-    console.log('here we go', res);
-    return res
+    return Buffer.from([0xE0 + fader - 1, ...value14Split(value14)])
 }, 'pitch')
 
 export const setLEDState = wrapType(function (led: LED, state: BUTTON_STATE) {
     return Buffer.from([0x90, led, state])
-}, 'noteon') // noteoff
+}, 'noteon')
 
 export const setLEDColour = wrapType(function (button: LED_RGB, rgb: [r7: number, g7: number, b7: number]) {
     return [
@@ -42,10 +39,10 @@ export const setLEDColour = wrapType(function (button: LED_RGB, rgb: [r7: number
         Buffer.from([0x92, button, (rgb[1] ?? 0) & 0x7F]),
         Buffer.from([0x93, button, (rgb[2] ?? 0) & 0x7F])
     ]
-}, 'noteon') // noteoff
+}, 'noteon')
 
 function _calculateValueBarSelector(fader: Faders16) {
-    if (0 <= fader && fader <= 7) {
+    if (1 <= fader && fader <= 8) {
         return 0x30 + fader - 1
     } else {
         return 0x40 + fader - 1 - 8
@@ -63,26 +60,26 @@ export const setValueBarMode = wrapType(function (fader: Faders16, mode: VALUE_B
 export const setScribbleStrip = wrapType(function (strip: Faders16, line: 1 | 2 | 3 | 4, text: string, flags?: SCRIBBLE_STRIP_STRING_FORMAT) {
     return Buffer.concat([
         SysExHdr,
-        Buffer.from([0x12, strip, line, flags ?? 0]),
+        Buffer.from([0x12, strip - 1, line - 1, flags ?? 0]),
         Buffer.from(text),
         Buffer.from([0xF7])
     ])
 }, 'sysex')
 
-export const setScribbleStripMode = wrapType(function (strip: Faders16, mode: SCRIBBLE_STRIP_MODE, redraw?: boolean) {
+export const setScribbleStripMode = wrapType(function (strip: Faders16, mode: SCRIBBLE_STRIP_MODE, keepExisting?: boolean) {
     return Buffer.concat([
         SysExHdr,
         Buffer.from([
             0x13,
-            strip,
-            mode | ((redraw ? SCRIBBLE_STRIP_REDRAW_MODE.KEEP : SCRIBBLE_STRIP_REDRAW_MODE.DISCARD) << 4),
+            strip - 1,
+            mode | ((keepExisting ? SCRIBBLE_STRIP_REDRAW_MODE.KEEP : SCRIBBLE_STRIP_REDRAW_MODE.DISCARD) << 4),
             0xF7
         ])
     ])
 }, 'sysex')
 
 function _calculateMeterSelector(fader: Faders16) {
-    if (0 <= fader && fader <= 7) {
+    if (1 <= fader && fader <= 8) {
         return 0xD0 + fader - 1
     } else {
         return 0xC0 + fader - 1 - 8

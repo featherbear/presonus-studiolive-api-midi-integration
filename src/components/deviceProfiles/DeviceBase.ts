@@ -10,9 +10,9 @@ export abstract class DeviceBase<ConfigType = unknown> {
     constructor(input: InputDevice, output?: OutputDevice, config?: ConfigType) {
         this.midiInput = <Input>((typeof input === 'string') ? new easymidi.Input(input) : input)
 
-        if (this.handle) (<any>this.midiInput.on)('message', this.handle)
+        if (this.handle) (<any>this.midiInput.on)('message', (message: MidiMessage) => this.handle(message))
         if (this.handleRaw) this.midiInput._input.on('message', (delta, bytes) => this.handleRaw(bytes, delta))
-        
+
         if (output) this.midiOutput = <Output>((typeof output === 'string') ? new easymidi.Output(output) : output)
 
         this.config = config
@@ -26,8 +26,8 @@ export abstract class DeviceBase<ConfigType = unknown> {
     protected handle?(message: MidiMessage)
     protected handleRaw?(bytes: Array<number>, delta: number)
 
-    send(type: MidiTypes, bytes?: Buffer) {
-        (<Function>this.midiOutput.send)(type, bytes)
+    get send() {
+        return this.midiOutput?.send.bind(this.midiOutput)
     }
 
     sendRaw(bytes: number[] | Buffer) {
