@@ -1,4 +1,3 @@
-import { claim_html_tag } from "svelte/internal";
 import type { MidiMessage } from "../../../../../types/easymidiInterop";
 import DeviceBase from "../../../DeviceBase";
 import type { Faders16, Faders8 } from "./interfaces";
@@ -17,6 +16,7 @@ export default class FaderPortDevice extends DeviceBase<ConfigType> {
     }
 
     init() {
+        console.log('init FaderPortDevice');
         this.keepAliveTimer = setInterval(() => {
             this.sendRaw(SysEx_KeepAlive)
         }, 1000)
@@ -150,14 +150,6 @@ export default class FaderPortDevice extends DeviceBase<ConfigType> {
 
     setReductionMeter(...args: Parameters<typeof OutputGenerator.setReductionMeter>) {
         this.#send(OutputGenerator.setReductionMeter, ...args)
-    }
-
-    handle(message: MidiMessage) {
-        console.log('parsed', message);
-
-        // Reflect button presses
-        if (message._type == 'noteon') this.send('noteon', message)
-
     }
 
     destroy() {

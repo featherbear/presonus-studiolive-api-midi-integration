@@ -38,10 +38,10 @@ assertEnv('MIDI_CHANNEL', (c) => (c < 0 || c > 15) && "Value must be between 0 a
 
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
-import FaderPortDevice from './components/deviceProfiles/presonus/faderport/interface/FaderPortDevice';
 import type DeviceDescriptor from './types/DeviceDescriptor';
-import { FaderBtn } from './components/deviceProfiles/presonus/faderport/interface/vendorConstants';
+import { FADER_TOUCH } from './components/deviceProfiles/presonus/faderport/interface/vendorConstants';
 import type { Input, Output } from './types/easymidiInterop';
+import FaderPortManager from './components/deviceProfiles/presonus/faderport';
 
 let virtualInputMIDI: Input;
 let virtualOutputMIDI: Output;
@@ -109,10 +109,10 @@ if (env.SERVER_ENABLE) {
 logger.info({ devices: midiService.discover() }, "Found MIDI devices")
 
 
-const faderportDefaultConfig: DeviceDescriptor<FaderPortDevice> = {
+const faderportDefaultConfig: DeviceDescriptor<FaderPortManager> = {
 	inputDevice: "FaderPort FP8",
 	outputDevice: "FaderPort FP8",
-	profile: FaderPortDevice,
+	profile: FaderPortManager,
 	profileConfig: {
 		s: ''
 	}
@@ -128,7 +128,7 @@ studioliveService.connect({ host: env.CONSOLE_HOST, port: env.CONSOLE_PORT }).th
 					{
 						inputDevice: env.MIDI_DEVICE,
 						outputDevice: env.MIDI_DEVICE,
-						profile: FaderPortDevice,
+						profile: FaderPortManager,
 						profileConfig: {
 
 						}

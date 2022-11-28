@@ -7,6 +7,7 @@ import EventEmitter from 'events'
 import type DeviceDescriptor from '../types/DeviceDescriptor'
 import type DeviceBase from '../components/deviceProfiles/DeviceBase'
 import type { Input, Output } from '../types/easymidiInterop'
+import type DeviceManager from '../types/DeviceManager'
 
 export default (() => ({
     discover() {
@@ -27,7 +28,7 @@ export default (() => ({
         }] as const
     },
 
-    connect(client: API, devices: DeviceDescriptor<DeviceBase>[]) {
+    connect(client: API, devices: DeviceDescriptor<DeviceManager>[]) {
         // let evtProxy_mute = new EventEmitter()
         // let evtProxy_level = new EventEmitter()
         // client.on('level', function (data) {
@@ -38,7 +39,8 @@ export default (() => ({
         // })
 
         devices.forEach((device) => {
-            new device.profile(device.inputDevice, device.outputDevice, device.profileConfig)
+            let instance = new device.profile(device.inputDevice, device.outputDevice, device.profileConfig)
+            instance.setAPI(client)
         })
 
 

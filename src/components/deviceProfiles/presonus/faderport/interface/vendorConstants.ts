@@ -14,7 +14,7 @@ export const SysEx_FP8_ID = 0x02;
  */
 const FADERPORT_16_ONLY: (_: number) => number = _ => _
 
-export enum FaderBtn {
+export enum FADER_TOUCH {
     FADER_1 = 0x68,
     FADER_2 = 0x69,
     FADER_3 = 0x6A,

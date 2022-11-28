@@ -27,7 +27,7 @@ export abstract class DeviceBase<ConfigType = unknown> {
     protected handleRaw?(bytes: Array<number>, delta: number)
 
     get send() {
-        return this.midiOutput?.send.bind(this.midiOutput)
+        return <Output['send']>this.midiOutput?.send.bind(this.midiOutput)
     }
 
     sendRaw(bytes: number[] | Buffer) {

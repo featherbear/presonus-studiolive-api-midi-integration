@@ -4,7 +4,7 @@ type ConfigType = {
 
 }
 
-export default class FaderPortDevice extends DeviceBase<ConfigType> {
+export default class GenericDevice extends DeviceBase<ConfigType> {
 
     init() {
     }
