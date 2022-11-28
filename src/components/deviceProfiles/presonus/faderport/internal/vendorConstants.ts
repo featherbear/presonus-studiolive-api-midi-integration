@@ -1,4 +1,8 @@
 export const SysExHdr = Buffer.from([0xf0, 0x00, 0x01, 0x06, 0x02])
+
+/**
+ * Actually a polypressure
+ */
 export const SysEx_KeepAlive = Buffer.from([0xa0, 0x00, 0x00])
 
 export const SysEx_Mfr = Buffer.from([0x00, 0x01, 0x06])
@@ -10,7 +14,7 @@ export const SysEx_FP8_ID = 0x02;
  */
 const FADERPORT_16_ONLY: (_: number) => number = _ => _
 
-export enum Fader {
+export enum FaderBtn {
     FADER_1 = 0x68,
     FADER_2 = 0x69,
     FADER_3 = 0x6A,

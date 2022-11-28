@@ -1,6 +1,6 @@
 import easymidi from 'easymidi'
 import type { InputDevice, OutputDevice } from "../../types/DeviceDescriptor"
-import type { Input, Output, MidiTypes } from '../../types/easymidiInterop'
+import type { Input, Output, MidiTypes, MidiMessage } from '../../types/easymidiInterop'
 
 export abstract class DeviceBase<ConfigType = unknown> {
     protected midiInput: Input
@@ -10,17 +10,10 @@ export abstract class DeviceBase<ConfigType = unknown> {
     constructor(input: InputDevice, output?: OutputDevice, config?: ConfigType) {
         this.midiInput = <Input>((typeof input === 'string') ? new easymidi.Input(input) : input)
 
-        if (this.handle) {
-            this.midiInput.on(<any>'message', this.handle)
-        }
-
-        if (this.handleRaw) {
-            this.midiInput._input.on('message', this.handleRaw)
-        }
-
-        if (output) {
-            this.midiOutput = <Output>((typeof output === 'string') ? new easymidi.Output(output) : output)
-        }
+        if (this.handle) (<any>this.midiInput.on)('message', this.handle)
+        if (this.handleRaw) this.midiInput._input.on('message', (delta, bytes) => this.handleRaw(bytes, delta))
+        
+        if (output) this.midiOutput = <Output>((typeof output === 'string') ? new easymidi.Output(output) : output)
 
         this.config = config
 
@@ -30,15 +23,15 @@ export abstract class DeviceBase<ConfigType = unknown> {
     init?()
     destroy?()
 
-    protected handle?()
-    protected handleRaw?()
+    protected handle?(message: MidiMessage)
+    protected handleRaw?(bytes: Array<number>, delta: number)
 
     send(type: MidiTypes, bytes?: Buffer) {
         (<Function>this.midiOutput.send)(type, bytes)
     }
 
-    sendRaw(bytes: Buffer) {
-        this.midiOutput?._output.sendMesage(bytes)
+    sendRaw(bytes: number[] | Buffer) {
+        this.midiOutput?._output.sendMessage(Buffer.isBuffer(bytes) ? [...bytes] : bytes)
     }
 
 

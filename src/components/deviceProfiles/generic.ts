@@ -1,3 +1,27 @@
+import DeviceBase from "./DeviceBase";
+
+type ConfigType = {
+
+}
+
+export default class FaderPortDevice extends DeviceBase<ConfigType> {
+
+    init() {
+    }
+
+    protected handle() {
+        console.log(arguments);
+    }
+
+    protected handleRaw() {
+        console.log(arguments);
+    }
+
+    destroy() {
+    }
+}
+
+
 //  // Log before actual functionality
 //  logger.info({ deviceName: (_device as easymidi.Input)?.name ?? _device }, "Attaching to MIDI device")
 
@@ -109,7 +133,7 @@
 
 
 //   let noteLatches = {}
-// 
+//
 // function handleNoteAction(action: NoteAction, noteConfig: typeof config['notes'][string]) {
 //     if (!action) return
 
