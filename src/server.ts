@@ -38,10 +38,14 @@ assertEnv('MIDI_CHANNEL', (c) => (c < 0 || c > 15) && "Value must be between 0 a
 
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
+import FaderPortDevice from './components/deviceProfiles/presonus/faderport/FaderPortDevice';
+import type DeviceDescriptor from './types/DeviceDescriptor';
+import { FaderBtn } from './components/deviceProfiles/presonus/faderport/internal/vendorConstants';
+import type { Input, Output } from './types/easymidiInterop';
 
-let virtualMIDIdevice;
-let virtualMIDIFeedback;
-let midiFeedbackFunction: (data: any) => void = () => { }
+let virtualInputMIDI: Input;
+let virtualOutputMIDI: Output;
+let midiFeedbackFunction: (data: any) => void
 
 if (env.SERVER_ENABLE) {
 	logger.info("Starting web server")
@@ -70,14 +74,14 @@ if (env.SERVER_ENABLE) {
 			conn.on('message', (bytes) => send(bytes))
 		})
 
-		outputDevice['_output'].sendMessage_ = outputDevice['_output'].sendMessage
-		outputDevice['_output'].sendMessage = function (payload) {
+		let orig_sendMessage = outputDevice._output.sendMessage
+		outputDevice._output.sendMessage = function (payload) {
 			io.of('/webmidi').send(payload)
-			outputDevice['_output'].sendMessage_(payload)
+			orig_sendMessage(payload)
 		}
 
-		virtualMIDIdevice = inputDevice
-		virtualMIDIFeedback = outputDevice
+		virtualInputMIDI = inputDevice
+		virtualOutputMIDI = outputDevice
 		logger.info("Created virtual MIDI device")
 	} else {
 		if (env.SERVER_WEBMIDI_EXCLUSIVE) {
@@ -104,16 +108,39 @@ if (env.SERVER_ENABLE) {
 
 logger.info({ devices: midiService.discover() }, "Found MIDI devices")
 
+
+const faderportDefaultConfig: DeviceDescriptor<FaderPortDevice> = {
+	inputDevice: "FaderPort FP8",
+	outputDevice: "FaderPort FP8",
+	profile: FaderPortDevice,
+	profileConfig: {
+		s: ''
+	}
+}
+
 studioliveService.connect({ host: env.CONSOLE_HOST, port: env.CONSOLE_PORT }).then(() => {
 	if (env.SERVER_WEBMIDI_EXCLUSIVE) {
 		logger.warn("Local MIDI listener not started because WebMIDI mode was set to exclusive")
 	} else {
 		studioliveService.withClient(client => {
 			try {
-				midiService.connect(client, {
-					device: env.MIDI_DEVICE,
-					eventCallback: midiFeedbackFunction
-				})
+				midiService.connect(client, [
+					{
+						inputDevice: env.MIDI_DEVICE,
+						outputDevice: env.MIDI_DEVICE,
+						profile: FaderPortDevice,
+						profileConfig: {
+
+						}
+					}
+
+				]
+
+					// {
+					// device: env.MIDI_DEVICE,
+					// eventCallback: midiFeedbackFunction
+					// }
+				)
 			} catch (e) {
 				logger.fatal(e.message)
 				process.exit(2)
@@ -123,11 +150,15 @@ studioliveService.connect({ host: env.CONSOLE_HOST, port: env.CONSOLE_PORT }).th
 
 	if (env.SERVER_WEBMIDI) {
 		studioliveService.withClient(client => {
-			midiService.connect(client, {
-				device: virtualMIDIdevice,
-				feedbackDevice: virtualMIDIFeedback,
-				eventCallback: midiFeedbackFunction
-			})
+			midiService.connect(client,
+				[
+					{
+						inputDevice: virtualInputMIDI,
+						outputDevice: virtualOutputMIDI,
+						profile: null
+					}
+				]
+			)
 		})
 	}
 })
