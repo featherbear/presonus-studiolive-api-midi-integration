@@ -179,7 +179,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     return
                 }
 
-
+                console.log(message);
                 this.send('noteon', message)
 
                 return;
