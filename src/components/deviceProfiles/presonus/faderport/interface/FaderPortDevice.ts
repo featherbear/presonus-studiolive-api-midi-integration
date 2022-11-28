@@ -21,91 +21,91 @@ export default class FaderPortDevice extends DeviceBase<ConfigType> {
             this.sendRaw(SysEx_KeepAlive)
         }, 1000)
 
-        setTimeout(() => {
-            console.log('start tests');
-            // {
-            //     setInterval(() => {
-            //         this.setFaderPosition(1, Math.random() * 100)
-            //         this.setFaderPosition(2, Math.random() * 100)
-            //         this.setFaderPosition(3, Math.random() * 100)
-            //         this.setFaderPosition(4, Math.random() * 100)
-            //         this.setFaderPosition(5, Math.random() * 100)
-            //         this.setFaderPosition(6, Math.random() * 100)
-            //         this.setFaderPosition(7, Math.random() * 100)
-            //         this.setFaderPosition(8, Math.random() * 100)
-            //     }, 1000)
-            // }
+        // setTimeout(() => {
+        //     console.log('start tests');
+        //     // {
+        //     //     setInterval(() => {
+        //     //         this.setFaderPosition(1, Math.random() * 100)
+        //     //         this.setFaderPosition(2, Math.random() * 100)
+        //     //         this.setFaderPosition(3, Math.random() * 100)
+        //     //         this.setFaderPosition(4, Math.random() * 100)
+        //     //         this.setFaderPosition(5, Math.random() * 100)
+        //     //         this.setFaderPosition(6, Math.random() * 100)
+        //     //         this.setFaderPosition(7, Math.random() * 100)
+        //     //         this.setFaderPosition(8, Math.random() * 100)
+        //     //     }, 1000)
+        //     // }
 
-            {
-                let states = [BUTTON_STATE.FLASH, BUTTON_STATE.OFF, BUTTON_STATE.ON]
-                setInterval(() => {
-                    this.setLEDState(LED.ARM, states[Math.floor(Math.random() * states.length)])
-                }, 1000)
-            }
+        //     {
+        //         let states = [BUTTON_STATE.FLASH, BUTTON_STATE.OFF, BUTTON_STATE.ON]
+        //         setInterval(() => {
+        //             this.setLEDState(LED.ARM, states[Math.floor(Math.random() * states.length)])
+        //         }, 1000)
+        //     }
 
-            {
-                this.setLEDState(LED.ALL, BUTTON_STATE.OFF)
-                setInterval(() => {
-                    this.setLEDColour(LED_RGB.ALL, [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)])
-                }, 100)
-            }
+        //     {
+        //         this.setLEDState(LED.ALL, BUTTON_STATE.OFF)
+        //         setInterval(() => {
+        //             this.setLEDColour(LED_RGB.ALL, [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)])
+        //         }, 100)
+        //     }
 
-            {
-                let LEDs = [LED.MUTE_1, LED.SOLO_1, LED.MUTE_2, LED.SOLO_2, LED.MUTE_3, LED.SOLO_3, LED.MUTE_4, LED.SOLO_4, LED.MUTE_5, LED.SOLO_5, LED.MUTE_6, LED.SOLO_6, LED.MUTE_7, LED.SOLO_7, LED.MUTE_8, LED.SOLO_8,]
+        //     {
+        //         let LEDs = [LED.MUTE_1, LED.SOLO_1, LED.MUTE_2, LED.SOLO_2, LED.MUTE_3, LED.SOLO_3, LED.MUTE_4, LED.SOLO_4, LED.MUTE_5, LED.SOLO_5, LED.MUTE_6, LED.SOLO_6, LED.MUTE_7, LED.SOLO_7, LED.MUTE_8, LED.SOLO_8,]
 
-                let position = 0;
-                let mode = BUTTON_STATE.ON
-                setInterval(() => {
-                    this.setLEDState(LEDs[position++], mode)
-                    if (position == LEDs.length) {
-                        mode = mode == BUTTON_STATE.ON ? BUTTON_STATE.OFF : BUTTON_STATE.ON
-                        position = 0
-                    }
-                }, 100)
-            }
+        //         let position = 0;
+        //         let mode = BUTTON_STATE.ON
+        //         setInterval(() => {
+        //             this.setLEDState(LEDs[position++], mode)
+        //             if (position == LEDs.length) {
+        //                 mode = mode == BUTTON_STATE.ON ? BUTTON_STATE.OFF : BUTTON_STATE.ON
+        //                 position = 0
+        //             }
+        //         }, 100)
+        //     }
 
-            {
-                setInterval(() => {
-                    for (let i = 1; i < 8; i++) {
-                        if (i != 3 && i != 4) this.setScribbleStripMode(<Faders8>i, 0)
-                        this.setScribbleStrip(<Faders8>i, <1 | 2 | 3 | 4>(Math.floor(Math.random() * 4) + 1), 'A');
-                    }
-                }, 1000)
-            }
+        //     {
+        //         setInterval(() => {
+        //             for (let i = 1; i < 8; i++) {
+        //                 if (i != 3 && i != 4) this.setScribbleStripMode(<Faders8>i, 0)
+        //                 this.setScribbleStrip(<Faders8>i, <1 | 2 | 3 | 4>(Math.floor(Math.random() * 4) + 1), 'A');
+        //             }
+        //         }, 1000)
+        //     }
 
-            {
-                let val = 0
-                let interval = 2;
-                let increment = interval
-                setInterval(() => {
-                    val += increment
-                    this.setValueBar(1, val)
-                    if (val == 126 || val == 0) increment = increment == interval ? -interval : interval
-                }, 100)
-            }
+        //     {
+        //         let val = 0
+        //         let interval = 2;
+        //         let increment = interval
+        //         setInterval(() => {
+        //             val += increment
+        //             this.setValueBar(1, val)
+        //             if (val == 126 || val == 0) increment = increment == interval ? -interval : interval
+        //         }, 100)
+        //     }
 
-            {
-                let modes = [VALUE_BAR_MODE.NORMAL, VALUE_BAR_MODE.BIPOLAR, VALUE_BAR_MODE.FILL, VALUE_BAR_MODE.SPREAD, VALUE_BAR_MODE.OFF]
-                let mode = 0;
-                setInterval(() => {
-                    this.setValueBarMode(1, mode)
-                    if (++mode == modes.length) {
-                        mode = 0;
-                    }
-                }, 10000)
-            }
+        //     {
+        //         let modes = [VALUE_BAR_MODE.NORMAL, VALUE_BAR_MODE.BIPOLAR, VALUE_BAR_MODE.FILL, VALUE_BAR_MODE.SPREAD, VALUE_BAR_MODE.OFF]
+        //         let mode = 0;
+        //         setInterval(() => {
+        //             this.setValueBarMode(1, mode)
+        //             if (++mode == modes.length) {
+        //                 mode = 0;
+        //             }
+        //         }, 10000)
+        //     }
 
-            {
-                setInterval(() => {
-                    this.setScribbleStripMode(3, SCRIBBLE_STRIP_MODE.MIXED_TEXT_METERING, false)
-                    this.setPeakMeter(3, 100)
-                }, 2500)
-                setInterval(() => {
-                    this.setScribbleStripMode(4, SCRIBBLE_STRIP_MODE.MIXED_TEXT_METERING, false)
-                    this.setReductionMeter(4, Math.floor(Math.random() * 127))
-                }, 500)
-            }
-        }, 3000)
+        //     {
+        //         setInterval(() => {
+        //             this.setScribbleStripMode(3, SCRIBBLE_STRIP_MODE.MIXED_TEXT_METERING, false)
+        //             this.setPeakMeter(3, 100)
+        //         }, 2500)
+        //         setInterval(() => {
+        //             this.setScribbleStripMode(4, SCRIBBLE_STRIP_MODE.MIXED_TEXT_METERING, false)
+        //             this.setReductionMeter(4, Math.floor(Math.random() * 127))
+        //         }, 500)
+        //     }
+        // }, 3000)
     }
 
     setFaderPosition(fader: Faders16, value100: number) {
