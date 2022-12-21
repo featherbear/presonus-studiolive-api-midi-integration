@@ -123,9 +123,8 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
             this.setLEDState(MUTE_ROW[i], this.API.getMute(currentChannel) ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
             this.setLEDState(SOLO_ROW[i], this.API.getSolo(currentChannel) ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
 
-            // FIXME: Fix null colour
             let colour = this.API.getColour(currentChannel)
-            if (typeof colour !== 'string') colour = '000000ff'
+            if (typeof colour !== 'string') colour = 'ffffffff'
             this.setLEDColour(SELECT_ROW[i], [...<[number, number, number]><any>Buffer.from(colour, "hex")])
 
             this.setScribbleStripMode(<Faders8>(i+ 1), SCRIBBLE_STRIP_MODE.ALTERNATIVE_DEFAULT, false)
