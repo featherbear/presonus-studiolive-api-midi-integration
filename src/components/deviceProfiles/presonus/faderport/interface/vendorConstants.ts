@@ -34,8 +34,8 @@ export enum FADER_TOUCH {
 };
 
 export enum Encoder {
-    PAN_PARAM,
-    SESSION_NAVIGATOR
+    PAN_PARAM = 0x10,
+    SESSION_NAVIGATOR = 0x3C
 };
 
 export enum Button {

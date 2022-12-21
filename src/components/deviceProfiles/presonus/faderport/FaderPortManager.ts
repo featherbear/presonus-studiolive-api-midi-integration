@@ -1,4 +1,4 @@
-import { ChannelSelector, Client } from "presonus-studiolive-api-simple-api";
+import type { ChannelSelector, Client } from "presonus-studiolive-api-simple-api";
 import { parseChannelString } from 'presonus-studiolive-api/dist/lib/util/channelUtil'
 
 // import type { ChannelSelector } from 'presonus-studiolive-api'
@@ -7,7 +7,7 @@ import type { MidiMessage } from "../../../../types/easymidiInterop";
 
 import FaderPortDevice from "./interface/FaderPortDevice";
 import type { Faders8 } from "./interface/interfaces";
-import { Button, BUTTON_STATE, LED_RGB, LED_SINGLE, FADER_TOUCH } from "./interface/vendorConstants";
+import { Button, BUTTON_STATE, LED_RGB, LED_SINGLE, FADER_TOUCH, Encoder } from "./interface/vendorConstants";
 import type DeviceManager from "../../../../types/DeviceManager";
 import { MAX_14 } from "./interface/outputGenerator";
 
@@ -52,10 +52,9 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
         setTimeout(() => {
             this.refreshVisibleChannels()
         }, 1000)
-        // [1, 2, 3, 4, 5, 6, 7, 8]
     }
 
-    private passthroughAPIEvent(evt, fn): [string, Function] {
+    private passthroughAPIEvent(evt: string, fn: Function): [typeof evt, typeof fn] {
         this.APIregistrations.push([evt, fn])
         return [evt, fn]
     }
@@ -69,13 +68,19 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
 
         this.API = api
 
-        this.API.on(...this.passthroughAPIEvent('level', evt => {
+        this.API.on(...<[any, any]>this.passthroughAPIEvent('level', evt => {
             this.tryNotifyFader(evt.channel, evt.level)
         }))
 
-        this.API.on(...this.passthroughAPIEvent('mute', evt => {
+        this.API.on(...<[any, any]>this.passthroughAPIEvent('mute', evt => {
             this.tryNotifyMute(evt.channel, evt.status)
         }))
+
+        this.API.on(...<[any, any]>this.passthroughAPIEvent('solo', evt => {
+            this.tryNotifySolo(evt.channel, evt.status)
+        }))
+
+
         // TODO: Do an update
     }
 
@@ -88,20 +93,25 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
     }
 
 
+    private tryNotifySolo(channel: ChannelSelector, state: boolean) {
+        for (let i = 0; i < 8; i++) {
+            if (!this.visibleChannels[i] || !channelMatches(this.visibleChannels[i], channel)) continue;
+            this.setLEDState(SOLO_ROW[i], state ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
+            break
+        }
+    }
+
+
     private tryNotifyFader(channel: ChannelSelector, level100: number) {
         for (let i = 0; i < 8; i++) {
             if (this.cancelFeedbackMap[FADER_ROW[i]]) continue
-
             if (!this.visibleChannels[i] || !channelMatches(this.visibleChannels[i], channel)) continue;
-
             this.setFaderPosition(<Faders8>(i + 1), level100)
             break
         }
     }
 
     private refreshVisibleChannels() {
-        [1, 2, 3, 4, 5, 6, 7, 8]
-
         for (let i = 0; i < 8; i++) {
             let currentChannel = this.visibleChannels[i];
             if (!currentChannel) {
@@ -111,9 +121,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
 
             this.setFaderPosition(<Faders8>(i + 1), this.API.getLevel(currentChannel))
             this.setLEDState(MUTE_ROW[i], this.API.getMute(currentChannel) ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
-
-            // FIXME: Add getSolo into API
-            this.setLEDState(SOLO_ROW[i], this.API.state.get(parseChannelString(currentChannel) + "/solo") ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
+            this.setLEDState(SOLO_ROW[i], this.API.getSolo(currentChannel) ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
 
             // FIXME: Fix null colour
             let colour = this.API.getColour(currentChannel)
@@ -168,9 +176,43 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     idx = SOLO_ROW.indexOf(message.note)
                     if (idx !== -1) {
                         this.cancelFeedbackMap[message.note] = true
-                        // TODO: Implement in API
+                        this.API.toggleSolo(this.visibleChannels[idx])
                         return
                     }
+
+
+                    switch (<Button>message.note) {
+                        case Button.NEXT: {
+                            this.setVisibleChannels(
+
+                                [
+                                    { type: "LINE", channel: 8 + 1 },
+                                    { type: "LINE", channel: 8 + 2 },
+                                    { type: "LINE", channel: 8 + 3 },
+                                    { type: "LINE", channel: 8 + 4 },
+                                    { type: "LINE", channel: 8 + 5 },
+                                    { type: "LINE", channel: 8 + 6 },
+                                    { type: "LINE", channel: 8 + 7 },
+                                    { type: "LINE", channel: 8 + 8 }
+                                ]
+                            )
+                            break
+                        }
+                        case Button.PREV: {
+                            this.setVisibleChannels([
+                                { type: "LINE", channel: 1 },
+                                { type: "LINE", channel: 2 },
+                                { type: "LINE", channel: 3 },
+                                { type: "LINE", channel: 4 },
+                                { type: "LINE", channel: 5 },
+                                { type: "LINE", channel: 6 },
+                                { type: "LINE", channel: 7 },
+                                { type: "LINE", channel: 8 }
+                            ])
+                            break
+                        }
+                    }
+
                 }
 
                 // Fallback, echo midi message for noteon events (button press)
@@ -181,7 +223,6 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
 
                 console.log(message);
                 this.send('noteon', message)
-
                 return;
             }
 
@@ -193,9 +234,25 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                 return
             }
 
+            case 'cc': {
+                let delta = message.value
+                if (delta > 64) delta = -delta + 64
+
+                if (message.channel == 0) {
+                    switch (<Encoder>message.controller) {
+                        case Encoder.PAN_PARAM: {
+                            console.log("Param", delta);
+                            return
+                        }
+                        case Encoder.SESSION_NAVIGATOR: {
+                            console.log('SESS', delta);
+                            return
+                        }
+                    }
+                }
+                console.log({ ...message, value: delta })
+                return
+            }
         }
-
-        console.log(message);
     }
-
 }
