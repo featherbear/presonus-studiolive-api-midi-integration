@@ -1,7 +1,5 @@
-import type { ChannelSelector, Client } from "presonus-studiolive-api-simple-api";
-import { parseChannelString } from 'presonus-studiolive-api/dist/lib/util/channelUtil'
-
-// import type { ChannelSelector } from 'presonus-studiolive-api'
+import { ChannelSelector, Client, MessageCode } from "presonus-studiolive-api-simple-api";
+import { settingsPathToChannelSelector } from 'presonus-studiolive-api-simple-api'
 
 import type { MidiMessage } from "../../../../types/easymidiInterop";
 
@@ -80,6 +78,16 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
             this.tryNotifySolo(evt.channel, evt.status)
         }))
 
+        this.API.on(MessageCode.ParamChars, ({ name, value }: { name: string, value: string }) => {
+            if (name.endsWith('color')) {
+                let channel = settingsPathToChannelSelector(name)
+                for (let i = 0; i < 8; i++) {
+                    if (!this.visibleChannels[i] || !channelMatches(this.visibleChannels[i], channel)) continue;
+                    this.setLEDColour(SELECT_ROW[i], [...<[number, number, number]><any>Buffer.from(value, "hex")])
+                    break
+                }
+            }
+        })
 
         // TODO: Do an update
     }
@@ -127,9 +135,9 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
             if (typeof colour !== 'string') colour = 'ffffffff'
             this.setLEDColour(SELECT_ROW[i], [...<[number, number, number]><any>Buffer.from(colour, "hex")])
 
-            this.setScribbleStripMode(<Faders8>(i+ 1), SCRIBBLE_STRIP_MODE.ALTERNATIVE_DEFAULT, false)
-            this.setScribbleStrip(<Faders8>(i+ 1), 1, currentChannel.channel?.toString())
-            this.setScribbleStrip(<Faders8>(i+ 1), 2, currentChannel.type)
+            this.setScribbleStripMode(<Faders8>(i + 1), SCRIBBLE_STRIP_MODE.ALTERNATIVE_DEFAULT, false)
+            this.setScribbleStrip(<Faders8>(i + 1), 1, currentChannel.channel?.toString())
+            this.setScribbleStrip(<Faders8>(i + 1), 2, currentChannel.type)
         }
 
 
