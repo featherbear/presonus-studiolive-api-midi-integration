@@ -7,7 +7,7 @@ import type { MidiMessage } from "../../../../types/easymidiInterop";
 
 import FaderPortDevice from "./interface/FaderPortDevice";
 import type { Faders8 } from "./interface/interfaces";
-import { Button, BUTTON_STATE, LED_RGB, LED_SINGLE, FADER_TOUCH, Encoder } from "./interface/vendorConstants";
+import { Button, BUTTON_STATE, LED_RGB, LED_SINGLE, FADER_TOUCH, Encoder, SCRIBBLE_STRIP_MODE } from "./interface/vendorConstants";
 import type DeviceManager from "../../../../types/DeviceManager";
 import { MAX_14 } from "./interface/outputGenerator";
 
@@ -127,6 +127,10 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
             let colour = this.API.getColour(currentChannel)
             if (typeof colour !== 'string') colour = '000000ff'
             this.setLEDColour(SELECT_ROW[i], [...<[number, number, number]><any>Buffer.from(colour, "hex")])
+
+            this.setScribbleStripMode(<Faders8>(i+ 1), SCRIBBLE_STRIP_MODE.ALTERNATIVE_DEFAULT, false)
+            this.setScribbleStrip(<Faders8>(i+ 1), 1, currentChannel.channel?.toString())
+            this.setScribbleStrip(<Faders8>(i+ 1), 2, currentChannel.type)
         }
 
 
