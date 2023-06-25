@@ -229,7 +229,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     // Check mute press
                     // The MIDI note for the mute button's LED note is used...
                     idx = MUTE_ROW.indexOf(message.note)
-                    if (idx !== -1&& this.visibleChannels[idx]) {
+                    if (idx !== -1 && this.visibleChannels[idx]) {
                         this.cancelFeedbackMap[message.note] = true
                         this.API.toggleMute(this.visibleChannels[idx])
                         return
@@ -238,7 +238,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     // Check solo press
                     // The MIDI note for the solo button's LED note is used...
                     idx = SOLO_ROW.indexOf(message.note)
-                    if (idx !== -1&& this.visibleChannels[idx]) {
+                    if (idx !== -1 && this.visibleChannels[idx]) {
                         this.cancelFeedbackMap[message.note] = true
                         this.API.toggleSolo(this.visibleChannels[idx])
                         return
@@ -253,6 +253,12 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     }
 
                     switch (<Button>message.note) {
+                        case Button.SHIFT_LEFT:
+                        case Button.SHIFT_RIGHT:
+                            this.setLEDState(LED_SINGLE.SHIFT_LEFT, BUTTON_STATE.ON)
+                            this.setLEDState(LED_SINGLE.SHIFT_RIGHT, BUTTON_STATE.ON)
+                            break
+
                         case Button.SOLO_CLEAR:
                             // this.API.setSolo()
                             console.log("TODO: SOLO CLEAR");
@@ -285,7 +291,16 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     }
 
 
+                } else if (message.velocity == VELOCITY.NOTEOFF) {
+                    switch (message.note) {
+                        case Button.SHIFT_LEFT:
+                        case Button.SHIFT_RIGHT:
+                            this.setLEDState(LED_SINGLE.SHIFT_LEFT, BUTTON_STATE.OFF)
+                            this.setLEDState(LED_SINGLE.SHIFT_RIGHT, BUTTON_STATE.OFF)
+                            break
+                    }
                 } else {
+
                     if (message.velocity == VELOCITY.NOTEOFF && message.note == Button.PLAY) {
                         console.log('set state');
                         setTimeout(() => {
