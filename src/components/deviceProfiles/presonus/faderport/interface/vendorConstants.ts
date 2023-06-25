@@ -295,3 +295,8 @@ export enum BUTTON_STATE {
     ON = 0x7F,
     FLASH = 0x01
 }
+
+export enum VELOCITY {
+    NOTEON = 0x7F,
+    NOTEOFF = 0
+}

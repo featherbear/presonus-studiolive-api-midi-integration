@@ -15,6 +15,7 @@ const value14Split = (value14: number) => {
 type OutputGenerator = (...args: any) => (Buffer | Buffer[])
 export type WrappedFunction<T extends (...args: any) => (Buffer | Buffer[])> = ((...args: Parameters<T>) => Buffer[]) & { type: MidiTypes }
 
+// Returns the output of an output generator as a buffer array with a $.type value
 const wrapType: <T extends OutputGenerator>(fn: T, midiType: MidiTypes) => WrappedFunction<T>
     = <T extends OutputGenerator>(fn: T, midiType) => {
         let wrapped = (...args) => {
