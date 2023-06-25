@@ -246,21 +246,28 @@ export const LED = {...LED_SINGLE, ...LED_RGB}
 export enum VALUE_BAR_MODE {
     /**
      * Single line
+     * 
+     * [     | ]
      */
     NORMAL = 0,
 
     /**
      * mid point at 64
+     * 
+     * [|||    ]
      */
     BIPOLAR = 1,
     
     /**
      * Solid bar
+     * 
+     * [|||    ]
      */
     FILL = 2,
     
     /**
      * Both ways at once
+     * [ |||| ]
      */
     SPREAD = 3,
     OFF = 4

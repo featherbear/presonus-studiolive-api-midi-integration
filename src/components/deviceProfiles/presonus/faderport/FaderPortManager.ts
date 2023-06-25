@@ -5,7 +5,7 @@ import type { MidiMessage } from "../../../../types/easymidiInterop";
 
 import FaderPortDevice from "./interface/FaderPortDevice";
 import type { Faders16, Faders8 } from "./interface/interfaces";
-import { Button, BUTTON_STATE, LED_RGB, LED_SINGLE, FADER_TOUCH, Encoder, SCRIBBLE_STRIP_MODE, VELOCITY } from "./interface/vendorConstants";
+import { Button, BUTTON_STATE, LED_RGB, LED_SINGLE, FADER_TOUCH, Encoder, SCRIBBLE_STRIP_MODE, VELOCITY, VALUE_BAR_MODE } from "./interface/vendorConstants";
 import type DeviceManager from "../../../../types/DeviceManager";
 import { MAX_14 } from "./interface/outputGenerator";
 
@@ -31,6 +31,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
     private APIregistrations: [string, Function][]
 
     private _currentPage: number;
+    private _editMode: null | 'pan'
     private pages: ChannelSelector[][]
 
     /**
@@ -181,6 +182,18 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
             this.setLEDColour(SELECT_ROW_LED[i], [...<[number, number, number]><any>Buffer.from(colour, "hex")])
 
             this.setScribbleStripMode(<Faders8>(i + 1), SCRIBBLE_STRIP_MODE.ALTERNATIVE_DEFAULT, false)
+
+            switch (this._editMode) {
+                case 'pan':
+                    // this.setScribbleStripMode(<Faders8>(i+1), SCRIBBLE_STRIP_MODE.ALTERNATIVE_TEXT_METERING, false)
+                    this.setValueBarMode(<Faders8>(i + 1), VALUE_BAR_MODE.BIPOLAR)
+                    // this.setValueBar(<Faders8>(i+1), 100)
+                    break
+                default:
+                    this.setValueBarMode(<Faders8>(i + 1), VALUE_BAR_MODE.OFF)
+                    break
+            }
+
             const map = {
                 1: "HH 1",
                 2: "HH 2",
@@ -211,7 +224,23 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
         this.refreshVisibleChannels()
     }
 
+    private setEditMode(mode: typeof this._editMode) {
+        console.log('set edit mode', mode);
+        this._editMode = mode
+
+        this.setLEDState(LED_SINGLE.PAN, BUTTON_STATE.OFF)
+
+        switch (mode) {
+            case 'pan':
+                this.setLEDState(LED_SINGLE.PAN, BUTTON_STATE.FLASH)
+        }
+
+        this.refreshVisibleChannels()
+    }
+
     handle(message: MidiMessage) {
+        console.log(message);
+
         let idx: number
 
         switch (message._type) {
@@ -264,6 +293,20 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                             console.log("TODO: SOLO CLEAR");
 
                             break
+
+                        case Button.PAN:
+                            console.log('pan press');
+                            this.cancelFeedbackMap[message.note] = true
+                            this.setEditMode(this._editMode === 'pan' ? null : 'pan')
+                            return
+
+                        case Button.PAN_PARAM:
+                            if (this._editMode === 'pan' && !!this.selectedChannel) {
+                                console.log("TODO: Set pan of selected channel to centre", this.selectedChannel);
+                            }
+                            break
+
+
                         case Button.PLAY:
                             const channels: ChannelSelector[] = [
                                 { type: "LINE", channel: 4 },
@@ -291,31 +334,37 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     }
 
 
-                } else if (message.velocity == VELOCITY.NOTEOFF) {
-                    switch (message.note) {
-                        case Button.SHIFT_LEFT:
-                        case Button.SHIFT_RIGHT:
-                            this.setLEDState(LED_SINGLE.SHIFT_LEFT, BUTTON_STATE.OFF)
-                            this.setLEDState(LED_SINGLE.SHIFT_RIGHT, BUTTON_STATE.OFF)
-                            break
-                    }
                 } else {
+                    let handled = false
 
-                    if (message.velocity == VELOCITY.NOTEOFF && message.note == Button.PLAY) {
-                        console.log('set state');
-                        setTimeout(() => {
-                            this.setLEDState(LED_SINGLE.PLAY, playStat ? BUTTON_STATE.OFF : BUTTON_STATE.ON)
-                        }, 0)
+                    if (message.velocity == VELOCITY.NOTEOFF) {
+                        switch (message.note) {
+                            case Button.SHIFT_LEFT:
+                            case Button.SHIFT_RIGHT:
+                                handled = true
+                                this.setLEDState(LED_SINGLE.SHIFT_LEFT, BUTTON_STATE.OFF)
+                                this.setLEDState(LED_SINGLE.SHIFT_RIGHT, BUTTON_STATE.OFF)
+                                break
+
+                            case Button.PLAY:
+                                console.log('set state');
+                                handled = true
+                                setTimeout(() => {
+                                    this.setLEDState(LED_SINGLE.PLAY, playStat ? BUTTON_STATE.OFF : BUTTON_STATE.ON)
+                                }, 0)
+                                break
+                        }
                     }
+
+                    // Fallback, echo midi message for noteon events (button press)
+                    if (!handled && this.cancelFeedbackMap[message.note]) {
+                        console.log('cancelled');
+                        delete this.cancelFeedbackMap[message.note]
+                        return
+                    }
+
                 }
 
-                // Fallback, echo midi message for noteon events (button press)
-                if (this.cancelFeedbackMap[message.note]) {
-                    delete this.cancelFeedbackMap[message.note]
-                    return
-                }
-
-                console.log(message);
                 this.send('noteon', message)
                 return;
             }
@@ -335,7 +384,14 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                 if (message.channel == 0) {
                     switch (<Encoder>message.controller) {
                         case Encoder.PAN_PARAM: {
+                            console.log(message);
+
+                            let value = Math.ceil(Math.abs(delta) / 2)
                             console.log("Param", delta);
+
+                            if (this._editMode === 'pan' && !!this.selectedChannel) {
+                                console.log("TODO: Adjust pan of selected channel", this.selectedChannel, Math.sign(delta) * value);
+                            }
                             return
                         }
                         case Encoder.SESSION_NAVIGATOR: {
