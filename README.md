@@ -7,6 +7,7 @@ A MIDI to StudioLive API integration
 
 * Install with `yarn`
 * Copy `.env.example` to `.env` and modify variables
+* Build with `yarn build`
 * Run with `yarn start`
 
 # Configuration
