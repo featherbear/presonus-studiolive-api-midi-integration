@@ -1,7 +1,7 @@
 import { ChannelSelector, Client, MessageCode } from "presonus-studiolive-api-simple-api";
 import { settingsPathToChannelSelector } from 'presonus-studiolive-api-simple-api'
 
-import type { MidiMessage } from "../../../../types/easymidiInterop";
+import type { MidiDeviceGroup, MidiMessage } from "../../../../types/easymidiInterop";
 
 import FaderPortDevice from "./interface/FaderPortDevice";
 import type { Faders16, Faders8 } from "./interface/interfaces";
@@ -25,7 +25,14 @@ const SOLO_ROW = [LED_SINGLE.SOLO_1, LED_SINGLE.SOLO_2, LED_SINGLE.SOLO_3, LED_S
 const SELECT_ROW_LED = [LED_RGB.SELECT_1, LED_RGB.SELECT_2, LED_RGB.SELECT_3, LED_RGB.SELECT_4, LED_RGB.SELECT_5, LED_RGB.SELECT_6, LED_RGB.SELECT_7, LED_RGB.SELECT_8]
 const SELECT_ROW_BTN = [Button.SELECT_1, Button.SELECT_2, Button.SELECT_3, Button.SELECT_4, Button.SELECT_5, Button.SELECT_6, Button.SELECT_7, Button.SELECT_8, Button.SELECT_9, Button.SELECT_10, Button.SELECT_11, Button.SELECT_12, Button.SELECT_13, Button.SELECT_14, Button.SELECT_15, Button.SELECT_16]
 
-export default class FaderPortManager extends FaderPortDevice implements DeviceManager {
+type FaderPortConfig = {
+    s: string
+}
+
+/**
+ * State manager for a FaderPort device
+ */
+export default class FaderPortManager extends FaderPortDevice implements DeviceManager<FaderPortConfig> {
     private selectedChannel: ChannelSelector
     private API: Client
     private APIregistrations: [string, Function][]
@@ -33,6 +40,8 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
     private _currentPage: number;
     private _editMode: null | 'pan'
     private pages: ChannelSelector[][]
+
+    config: FaderPortConfig
 
     /**
      * State map to ignore the button noteoff events (well, noteon with velocity 0)
@@ -43,8 +52,12 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
         return this.pages[this._currentPage]
     }
 
-    constructor(...args: ConstructorParameters<typeof FaderPortDevice>) {
-        super(...args)
+    // constructor(...args: ConstructorParameters<typeof FaderPortDevice>) {
+    constructor(midiDevice: MidiDeviceGroup, config: FaderPortConfig) {
+        super(midiDevice)
+        this.config = config
+
+        console.log("FADER PORT MANAGER", config);
 
         this.pages = [
             [
@@ -87,9 +100,12 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
 
     setAPI(api: Client) {
         if (this.API) {
-            let _apiRegistrations = [...this.APIregistrations]
+            const old_apiRegistrations = [...this.APIregistrations]
             this.APIregistrations = []
-            _apiRegistrations.forEach(([evt, fn]) => this.API.removeListener(<any>evt, <any>fn))
+
+            for (const [evt, fn] of old_apiRegistrations) {
+                this.API.removeListener(<any>evt, <any>fn);
+            }
         }
 
         this.API = api
@@ -108,7 +124,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
 
         this.API.on(MessageCode.ParamChars, ({ name, value }: { name: string, value: string }) => {
             if (name.endsWith('color')) {
-                let channel = settingsPathToChannelSelector(name)
+                const channel = settingsPathToChannelSelector(name)
                 for (let i = 0; i < 8; i++) {
                     if (!this.visibleChannels[i] || !channelMatches(this.visibleChannels[i], channel)) continue;
                     this.setLEDColour(SELECT_ROW_LED[i], [...<[number, number, number]><any>Buffer.from(value, "hex")])
@@ -116,7 +132,6 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                 }
             }
         })
-
 
 
         // TODO: Do an update
@@ -157,7 +172,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
 
     private refreshVisibleChannels() {
         for (let i = 0; i < 8; i++) {
-            let currentChannel = this.visibleChannels[i];
+            const currentChannel = this.visibleChannels[i];
             if (!currentChannel) {
                 // Channel not found / disabled
                 this.setLEDColour(SELECT_ROW_LED[i], [...<[number, number, number]><any>Buffer.from('ffffff', "hex")])
@@ -174,8 +189,8 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
             this.setFaderPosition(<Faders8>(i + 1), this.API.getLevel(currentChannel))
             this.setLEDState(MUTE_ROW[i], this.API.getMute(currentChannel) ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
             this.setLEDState(SOLO_ROW[i], this.API.getSolo(currentChannel) ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
-            console.log(i, SELECT_ROW_LED[i], this.selectedChannel == currentChannel ? BUTTON_STATE.ON : BUTTON_STATE.OFF);
-            this.setLEDState(SELECT_ROW_LED[i], this.selectedChannel == currentChannel ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
+            console.log(i, SELECT_ROW_LED[i], this.selectedChannel === currentChannel ? BUTTON_STATE.ON : BUTTON_STATE.OFF);
+            this.setLEDState(SELECT_ROW_LED[i], this.selectedChannel === currentChannel ? BUTTON_STATE.ON : BUTTON_STATE.OFF)
 
             let colour = this.API.getColour(currentChannel)
             if (typeof colour !== 'string') colour = 'ffffffff'
@@ -239,6 +254,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
     }
 
     handle(message: MidiMessage) {
+        
         console.log(message);
 
         let idx: number
@@ -253,7 +269,7 @@ export default class FaderPortManager extends FaderPortDevice implements DeviceM
                     return
                 }
 
-                if (message.velocity == VELOCITY.NOTEON) {
+                if (message.velocity === VELOCITY.NOTEON) {
 
                     // Check mute press
                     // The MIDI note for the mute button's LED note is used...

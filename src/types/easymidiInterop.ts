@@ -13,6 +13,11 @@ export declare class Output extends easymidi.Output {
     }
 }
 
+export type MidiDeviceGroup = {
+    input: easymidi.Input,
+    output?: easymidi.Output
+}
+
 type AddType<I, T> = I & { _type: T }
 export type MidiMessage =
     AddType<Note, 'noteon' | 'noteoff'>

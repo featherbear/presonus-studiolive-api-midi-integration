@@ -1,6 +1,9 @@
 interface DeviceJSON {
-    device: string
-    channel: number
+	active: {
+		device: string;
+		channel: number;
+	};
+	devices: string[];
 }
 
-export default DeviceJSON
+export default DeviceJSON;

@@ -4,17 +4,17 @@ type ConfigType = {
 
 }
 
-export default class GenericDevice extends DeviceBase<ConfigType> {
+export default class GenericDevice extends DeviceBase {
 
     init() {
     }
 
-    protected handle() {
-        console.log(arguments);
+    protected handle(...args) {
+        console.log(...args);
     }
 
-    protected handleRaw() {
-        console.log(arguments);
+    protected handleRaw(...args) {
+        console.log(...args);
     }
 
     destroy() {

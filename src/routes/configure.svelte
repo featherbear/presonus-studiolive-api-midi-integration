@@ -1,15 +1,19 @@
 <script context="module">
-  export async function preload() {
-    let map = this.fetch("data/map.json").then((r) => r.json());
-    let device = this.fetch("data/device.json").then((r) => r.json());
+  export async function preload(page, session) {
+
+    const map = this.fetch("data/map.json").then((r) => r.json());
+    const midiDevices = this.fetch("data/midiDevices.json").then((r) => r.json());
+
     return {
       map: await map,
-      device: await device,
+      midiDevices: await midiDevices
     };
   }
 </script>
 
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import ControllerRow from "../components/configure/ControllerRow.svelte";
   import NoteRow from "../components/configure/NoteRow.svelte";
 
@@ -18,8 +22,8 @@
   import type DeviceJSON from "./data/_DeviceJSON";
   import type MapJSON from "./data/_MapJSON";
 
-  export let device: DeviceJSON;
   export let map: MapJSON;
+  export let midiDevices: DeviceJSON;
 
   let currentMap = {
     controllers: Object.entries(map.controllers),
@@ -45,20 +49,29 @@
       ),
     });
   }
+
+
 </script>
 
-<p>MIDI Device: {device.device}</p>
-<p>MIDI Channel: {device.channel}</p>
-<h1>Controllers</h1>
+<select bind:value={midiDevices.active.device}>
+  {#each midiDevices.devices as midiDeviceEntry}
+  <option value={midiDeviceEntry}>{midiDeviceEntry}</option>
+  {/each}
+</select>
+
+<p>MIDI Device: {midiDevices.active.device}</p>
+<p>MIDI Channel: {midiDevices.active.channel}</p>
+
+<section>
+  <h1>MIDI Events</h1>
+
+</section>
+
 <table>
   <thead>
     <tr>
-      <th>MIDI</th>
-      <th colspan="2">StudioLive</th>
-    </tr>
-    <tr>
-      <th>Control</th>
-      <th>Type</th>
+      <th>MIDI CC</th>
+      <th>Behaviour</th>
       <th>Target</th>
     </tr>
   </thead>
@@ -66,17 +79,17 @@
     {#each currentMap.controllers as data}
       <ControllerRow {data} />
     {/each}
-    <ControllerRow
+    <!-- <ControllerRow
       class="newEntry"
       on:change={({ detail: { data, reset } }) => {
         currentMap.controllers = [...currentMap.controllers, data];
         reset();
       }}
-    />
+    /> -->
   </tbody>
 </table>
 
-<h1>Notes</h1>
+<h1>MIDI Note</h1>
 <table>
   <thead>
     <tr>

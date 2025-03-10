@@ -5,14 +5,12 @@ import * as OutputGenerator from "./outputGenerator";
 
 import { BUTTON_STATE, LED, LED_RGB, SCRIBBLE_STRIP_MODE, SysEx_KeepAlive, VALUE_BAR_MODE } from "./vendorConstants";
 
-type ConfigType = {
-    s: string
-}
-
-export default class FaderPortDevice extends DeviceBase<ConfigType> {
+export default class FaderPortDevice extends DeviceBase {
     private keepAliveTimer: NodeJS.Timeout
     #send<T extends OutputGenerator.WrappedFunction<any>>(fn: T, ...args: Parameters<T>) {
-        fn(...args).forEach((buffer) => this.sendRaw(buffer))
+        for (const buffer of fn(...args)) {
+            this.sendRaw(buffer);
+        }
     }
 
     testMode() {
@@ -153,6 +151,7 @@ export default class FaderPortDevice extends DeviceBase<ConfigType> {
     }
 
     destroy() {
+        super.destroy()
         clearInterval(this.keepAliveTimer)
     }
 }
