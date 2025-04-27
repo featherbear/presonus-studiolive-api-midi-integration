@@ -1,12 +1,13 @@
 <script context="module">
   export async function preload(page, session) {
-
     const map = this.fetch("data/map.json").then((r) => r.json());
-    const midiDevices = this.fetch("data/midiDevices.json").then((r) => r.json());
+    const midiDevices = this.fetch("data/midiDevices.json").then((r) =>
+      r.json()
+    );
 
     return {
       map: await map,
-      midiDevices: await midiDevices
+      midiDevices: await midiDevices,
     };
   }
 </script>
@@ -18,7 +19,7 @@
   import NoteRow from "../components/configure/NoteRow.svelte";
 
   import type config from "../server/config";
-  
+
   import type DeviceJSON from "./data/_DeviceJSON";
   import type MapJSON from "./data/_MapJSON";
 
@@ -50,12 +51,39 @@
     });
   }
 
+  onMount(async () => {
+    let SocketIO = await import("socket.io-client");
 
+    function setUpListenPls(deviceName: string) {
+      console.log("Try connect");
+
+      let client = SocketIO.io("/raw_midi_events_idk", { path: "/s" });
+
+      client.on("connect", () => {
+        console.log("WEBSOCKET Connected");
+
+        let interval = setInterval(() => {
+          client.emit('subscribe', deviceName)
+        }, 1000);
+
+        client.on("disconnect", () => {
+          console.log("WEBSOCKET Disconnected");
+          clearInterval(interval);
+        });
+      });
+
+      client.on("midi", (event) => {
+        console.log("Got midi", event);
+      });
+    }
+
+    setUpListenPls(midiDevices.active.device);
+  });
 </script>
 
 <select bind:value={midiDevices.active.device}>
   {#each midiDevices.devices as midiDeviceEntry}
-  <option value={midiDeviceEntry}>{midiDeviceEntry}</option>
+    <option value={midiDeviceEntry}>{midiDeviceEntry}</option>
   {/each}
 </select>
 
@@ -64,7 +92,6 @@
 
 <section>
   <h1>MIDI Events</h1>
-
 </section>
 
 <table>

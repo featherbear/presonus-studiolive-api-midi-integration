@@ -9,11 +9,11 @@ export default class GenericDevice extends DeviceBase {
     init() {
     }
 
-    protected handle(...args) {
+    protected handleMidiMessage(...args) {
         console.log(...args);
     }
 
-    protected handleRaw(...args) {
+    protected handleRawMidiMessage(...args) {
         console.log(...args);
     }
 

@@ -1,6 +1,9 @@
 import type { Input, Output, MidiMessage, MidiDeviceGroup } from '../../types/easymidiInterop'
 
 
+/**
+ * The implementor of this class handles the sending and receiving of MIDI messages
+ */
 export abstract class DeviceBase {
     protected midiInput: Input
     protected midiOutput?: Output
@@ -17,12 +20,12 @@ export abstract class DeviceBase {
 
         this.#sendFn = this.midiOutput?.send.bind(this.midiOutput)
 
-        if (this.handle) {
-            this.#handleFn = (message: MidiMessage) => this.handle?.(message);
+        if (this.handleMidiMessage) {
+            this.#handleFn = (message: MidiMessage) => this.handleMidiMessage?.(message);
             (<any>this.midiInput.on)('message', this.#handleFn)
         }
-        if (this.handleRaw) {
-            this.#handleRawFn = (delta: number, bytes: number[]) => this.handleRaw?.(bytes, delta);
+        if (this.handleRawMidiMessage) {
+            this.#handleRawFn = (delta: number, bytes: number[]) => this.handleRawMidiMessage?.(bytes, delta);
             this.midiInput._input.on('message', this.#handleRawFn)
         }
 
@@ -32,15 +35,15 @@ export abstract class DeviceBase {
     abstract init?()
 
     destroy() {
-        if (this.handle) (<any>this.midiInput.off)('message', this.#handleFn)
+        if (this.handleMidiMessage) (<any>this.midiInput.off)('message', this.#handleFn)
 
         // FIXME: is there an off method
         // if (this.handleRaw) this.midiInput._input.off('message', this.#handleRawFn)
     
     }
 
-    protected handle?(message: MidiMessage)
-    protected handleRaw?(bytes: Array<number>, delta: number)
+    protected handleMidiMessage?(message: MidiMessage)
+    protected handleRawMidiMessage?(bytes: Array<number>, delta: number)
 
     get send() {
         return this.#sendFn

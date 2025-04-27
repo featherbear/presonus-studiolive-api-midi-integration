@@ -26,13 +26,15 @@ export default (() => ({
 		] as const;
 	},
 
-	connect<T extends DeviceManager<unknown>>(
+	// Kinda just a centralised way to connect a device to a profile
+	init<T extends DeviceManager<unknown>>(
 		client: API,
 		midiDeviceGroup: MidiDeviceGroup,
 		profile: new (...args: any[]) => T,
 		profileConfig: T["config"],
 	) {
 		const instance = new profile(midiDeviceGroup, profileConfig);
-		instance.setAPI(client);
+		// instance.setAPI(client);
+		return instance
 	},
 }))();

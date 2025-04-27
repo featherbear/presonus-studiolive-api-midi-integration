@@ -5,8 +5,13 @@ import * as OutputGenerator from "./outputGenerator";
 
 import { BUTTON_STATE, LED, LED_RGB, SCRIBBLE_STRIP_MODE, SysEx_KeepAlive, VALUE_BAR_MODE } from "./vendorConstants";
 
+
+/**
+ * The MIDI 
+ */
 export default class FaderPortDevice extends DeviceBase {
     private keepAliveTimer: NodeJS.Timeout
+    
     #send<T extends OutputGenerator.WrappedFunction<any>>(fn: T, ...args: Parameters<T>) {
         for (const buffer of fn(...args)) {
             this.sendRaw(buffer);

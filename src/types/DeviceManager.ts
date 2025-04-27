@@ -9,5 +9,6 @@ export default abstract class DeviceManager<ConfigType> extends DeviceBase {
         super(midiDevice)
     }
     
-    abstract setAPI(api: Client)
+    abstract connectAPI(api: Client)
+    abstract disconnectAPI()
 }
