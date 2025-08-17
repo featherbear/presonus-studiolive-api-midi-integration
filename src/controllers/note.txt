@@ -1,0 +1,4 @@
+// "MIDI Connections" are the link to the ports
+// "MIDI Devices" translate raw MIDI messages and events to a specific format
+// "MIDI Controllers" manage a specific state and use the device to interact with a console
+// MIDI Controllers optionally expose a "MIDI Web Controller"
