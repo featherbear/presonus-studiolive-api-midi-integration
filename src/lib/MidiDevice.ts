@@ -3,7 +3,7 @@ import { type MidiConnection } from "./MidiConnection";
 /**
  * Base class for Midi Devices
  */
-abstract class MidiDevice {
+export abstract class MidiDevice {
   connection: MidiConnection;
 
   constructor(connection: MidiConnection) {
@@ -14,5 +14,3 @@ abstract class MidiDevice {
   abstract init(): void;
   abstract destroy(): void;
 }
-
-export default MidiDevice;

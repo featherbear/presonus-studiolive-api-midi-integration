@@ -15,10 +15,22 @@ export class ConsoleConnectionManager {
     this.#connections = {};
   }
 
-  register(...args: InitArgs) {
+  static discover() {
+    return SimpleClient.discover();
+  }
+
+  discover() {
+    return ConsoleConnectionManager.discover();
+  }
+
+  create(...args: InitArgs) {
     const instance = new ConsoleConnection(this, ...args);
     this.#connections[instance.id] = instance;
     return instance;
+  }
+
+  get connections() {
+    return this.#connections;
   }
 }
 
@@ -27,7 +39,7 @@ export class ConsoleConnection {
     manager: ConsoleConnectionManager;
     initArgs: InitArgs;
   };
-  private id: string;
+  id: string;
   private listeners: EventRegistrationPersistence;
   client: SimpleClient;
 
@@ -72,4 +84,5 @@ export class ConsoleConnection {
   }
 }
 
-export default new ConsoleConnectionManager();
+const consoleConnectionManagerInstance = new ConsoleConnectionManager();
+export default consoleConnectionManagerInstance;

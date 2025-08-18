@@ -1,17 +1,41 @@
 import { nanoid } from "nanoid";
-import type { ConsoleConnection } from "./ConsoleConnection";
-import type MidiDevice from "./MidiDevice";
+import type { MidiDevice } from "./MidiDevice";
+import type { MidiConnection } from "./MidiConnection";
 
-abstract class MidiController<Device extends MidiDevice = MidiDevice, Config = undefined> {
-  protected id: string;
-  protected device: Device;
-  protected config: Config;
+export class MidiControllerManager {
+  #controllers: Record<string, MidiController>;
+  constructor() {
+    this.#controllers = {};
+  }
 
-  constructor(device: Device, config?: Config) {
-    this.id = nanoid();
-    this.device = device;
-    this.config = config as Config
+  get connections() {
+    return this.#controllers;
+  }
+
+  register<T extends MidiController>(instance: T): T {
+    this.#controllers[instance.id] = instance;
+    return instance;
   }
 }
 
-export default MidiController;
+export abstract class MidiController<
+  D extends MidiDevice = MidiDevice,
+  Config = undefined
+> {
+  id: string;
+  protected device!: D;
+  protected config: Config;
+
+  constructor(connection: MidiConnection, config?: Config) {
+    this.id = nanoid();
+    this.config = config as Config;
+    this.initDevice(connection);
+    if (!this.device) {
+      throw new Error(
+        "MIDI Controller did not correctly implement initDevice()"
+      );
+    }
+  }
+
+  abstract initDevice(connection: MidiConnection): void;
+}

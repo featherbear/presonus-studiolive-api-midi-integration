@@ -24,11 +24,15 @@ export class MidiConnectionManager {
     this.#connections = {};
   }
 
+  get connections() {
+    return this.#connections;
+  }
+
   discover() {
     return MidiConnectionManager.discover();
   }
 
-  register(inputDevice: string | Input, outputDevice?: string | Output) {
+  create(inputDevice: string | Input, outputDevice?: string | Output) {
     const instance = new MidiConnection(
       typeof inputDevice === "string"
         ? (new easymidi.Input(inputDevice) as Input)
@@ -71,7 +75,7 @@ export class MidiConnectionManager {
       }
     }
 
-    return this.register(inputDevice, outputDevice);
+    return this.create(inputDevice, outputDevice);
   }
 }
 
@@ -145,11 +149,5 @@ export class MidiConnection {
   };
 }
 
-export default new MidiConnectionManager();
-
-type ParametersZ<T extends Output["send"]> = T extends (
-  event: infer X,
-  data: infer P
-) => any
-  ? [X, P]
-  : never;
+const midiConnectionManagerInstance = new MidiConnectionManager();
+export default midiConnectionManagerInstance;

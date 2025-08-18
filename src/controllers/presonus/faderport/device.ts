@@ -1,4 +1,4 @@
-import MidiDevice from "$lib/MidiDevice";
+import { MidiDevice } from "$lib/MidiDevice";
 import type { Faders16Channel } from "./lib/types";
 import * as vendor from "./lib/vendorConstants";
 

@@ -1,7 +1,7 @@
 import { ConsoleConnection } from "$lib/ConsoleConnection";
-import MidiController from "$lib/MidiController";
+import { MidiController } from "$lib/MidiController";
 import { MessageCode, type ChannelSelector } from "presonus-studiolive-api";
-import type FaderPortDevice from "./device";
+import FaderPortDevice from "./device";
 import {
   BUTTON,
   BUTTON_STATE,
@@ -20,6 +20,7 @@ import {
 import { settingsPathToChannelSelector } from "presonus-studiolive-api/simple";
 import type { Faders16Channel } from "./lib/types";
 import { MAX_14 } from "./lib/valueGenerator";
+import type { MidiConnection } from "$lib/MidiConnection";
 
 const layout = {
   FADER_ROW: [
@@ -126,7 +127,7 @@ class FaderPortController extends MidiController<
    */
   #cancelFeedbackMap: Record<any, boolean>;
 
-  constructor(device: FaderPortDevice, config: FaderPortConfig) {
+  constructor(device: MidiConnection, config: FaderPortConfig) {
     super(device, config);
 
     this.#selectedChannel = undefined;
@@ -134,7 +135,11 @@ class FaderPortController extends MidiController<
     this.#consoleListeners = {};
     this.#cancelFeedbackMap = {};
 
-    this.init()
+    this.init();
+  }
+
+  initDevice(connection: MidiConnection): void {
+    this.device = new FaderPortDevice(connection);
   }
 
   get visibleChannels() {
