@@ -357,7 +357,8 @@ class FaderPortController extends MidiController<
 
         // Check mute press
         const muteIndex = layout.MUTE_ROW.indexOf(note.note);
-        if (muteIndex >= 0 && this.visibleChannels[muteIndex]) {
+        if (muteIndex >= 0) {
+          if (!this.visibleChannels[muteIndex]) return;
           if (note.velocity === VELOCITY.NOTEON) {
             this.#console?.client.toggleMute(
               this.visibleChannels[muteIndex].channel
@@ -369,7 +370,8 @@ class FaderPortController extends MidiController<
 
         // Check solo press
         const soloIndex = layout.SOLO_ROW.indexOf(note.note);
-        if (soloIndex >= 0 && this.visibleChannels[soloIndex]) {
+        if (soloIndex >= 0) {
+          if (!this.visibleChannels[soloIndex]) return;
           if (note.velocity === VELOCITY.NOTEON) {
             this.#console?.client.toggleSolo(
               this.visibleChannels[soloIndex].channel
@@ -381,7 +383,8 @@ class FaderPortController extends MidiController<
 
         // Check select press
         const selectIndex = layout.SELECT_ROW_BTN.indexOf(note.note);
-        if (selectIndex >= 0 && this.visibleChannels[selectIndex]) {
+        if (selectIndex >= 0) {
+          if (!this.visibleChannels[selectIndex]) return;
           if (note.velocity === VELOCITY.NOTEON) {
             this.selectChannel(this.visibleChannels[selectIndex].channel);
           }
