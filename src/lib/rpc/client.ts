@@ -4,8 +4,8 @@ import { createORPCClient, onError } from "@orpc/client";
 import { OpenAPILink } from "@orpc/openapi-client/fetch";
 import { contract } from "./contract";
 
-const link = new OpenAPILink(contract, {
-  url: "/api",
+const link = new OpenAPILink(contract, {  
+  url: `${location.origin}/api`,
   interceptors: [
     onError((error) => {
       console.error(error);

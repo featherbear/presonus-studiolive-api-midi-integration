@@ -1,7 +1,7 @@
 import type { RequestHandler } from "@sveltejs/kit";
 
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { router } from "$lib/rpc/impl";
+import { router } from "$lib/rpc/implementation";
 
 const handler = new OpenAPIHandler(router, {});
 

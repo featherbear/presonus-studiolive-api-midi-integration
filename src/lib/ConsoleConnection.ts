@@ -1,13 +1,33 @@
 import { nanoid } from "nanoid";
 import { SimpleClient } from "presonus-studiolive-api/simple";
+import { Discovery, type DiscoveryType } from "presonus-studiolive-api";
 
 import {
   proxyEventRegistrationInterface,
   restoreEventRegistrations,
   type EventRegistrationPersistence,
 } from "./EventRegistrationPersistence";
+import type { ConsoleConnectionInterop } from "./types/ConsoleConnectionInterop";
 
 type InitArgs = ConstructorParameters<typeof SimpleClient>;
+
+const discoveryClient = new Discovery();
+let discoveredConsoles: Record<string, DiscoveryType> = {};
+discoveryClient.on("discover", (entry: DiscoveryType) => {
+  if (!entry.serial) {
+    console.warn("Dropping discovery of", entry, "no serial");
+    return;
+  }
+  discoveredConsoles[entry.serial] = entry;
+});
+discoveryClient.start()
+
+function getDiscoveredConsoles() {
+  let now = new Date();
+  return Object.values(discoveredConsoles)
+    .filter((entry) => now.getTime() - entry.timestamp.getTime() < 10 * 1000)
+    .sort((a, b) => a.serial.localeCompare(b.serial));
+}
 
 export class ConsoleConnectionManager {
   #connections: Record<string, ConsoleConnection>;
@@ -16,17 +36,31 @@ export class ConsoleConnectionManager {
   }
 
   static discover() {
-    return SimpleClient.discover();
+    return getDiscoveredConsoles();
   }
 
   discover() {
-    return ConsoleConnectionManager.discover();
+    return getDiscoveredConsoles();
+  }
+
+  get(id: string) {
+    return this.#connections[id];
+  }
+
+  private register(instance: ConsoleConnection) {
+    this.#connections[instance.id] = instance;
+    return instance;
+  }
+
+  addFromConfig(config: ConsoleConnectionInterop) {
+    const instance = new ConsoleConnection(this, config.address);
+    instance.id = config.id;
+    return this.register(instance);
   }
 
   create(...args: InitArgs) {
     const instance = new ConsoleConnection(this, ...args);
-    this.#connections[instance.id] = instance;
-    return instance;
+    return this.register(instance);
   }
 
   get connections() {
@@ -51,6 +85,14 @@ export class ConsoleConnection {
     this.id = nanoid();
     this.listeners = {};
     this.client = this.createConsole(...args);
+  }
+
+  toJSON(): ConsoleConnectionInterop {
+    return {
+      id: this.id,
+      name: "TODO: Set name",
+      address: this.context.initArgs[0],
+    };
   }
 
   private createConsole(...args: InitArgs) {

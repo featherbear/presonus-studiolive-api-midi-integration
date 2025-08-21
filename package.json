@@ -1,0 +1,50 @@
+{
+	"name": "presonus-studiolive-api-midi-integration",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "tsx src/test.ts"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-node": "^5.2.14",
+		"@sveltejs/kit": "^2.29.0",
+		"@sveltejs/vite-plugin-svelte": "^6.1.2",
+		"@tailwindcss/vite": "^4.0.0",
+		"flowbite": "^3.1.2",
+		"flowbite-svelte": "^1.12.6",
+		"flowbite-svelte-blocks": "^2.1.0",
+		"flowbite-svelte-icons": "^2.3.0",
+		"sass-embedded": "^1.90.0",
+		"svelte": "^5.38.1",
+		"svelte-check": "^4.3.1",
+		"tailwindcss": "^4.0.0",
+		"tsx": "^4.20.4",
+		"typescript": "^5.9.2",
+		"vite": "^7.1.2",
+		"zod": "^4.0.17"
+	},
+	"dependencies": {
+		"@orpc/client": "^1.8.1",
+		"@orpc/contract": "^1.8.1",
+		"@orpc/openapi": "^1.8.1",
+		"@orpc/openapi-client": "^1.8.1",
+		"@orpc/server": "^1.8.1",
+		"@orpc/zod": "^1.8.1",
+		"@scalar/sveltekit": "^0.1.17",
+		"bunyan": "^1.8.15",
+		"dotenv": "^17.2.1",
+		"easymidi": "^3.1.0",
+		"express": "^5.1.0",
+		"nanoid": "^5.1.5",
+		"presonus-studiolive-api": "featherbear/presonus-studiolive-api#60ac3a066a18b909d3261edd82385dfb92eead9b",
+		"socket.io": "^4.8.1",
+		"socket.io-client": "^4.8.1"
+	}
+}

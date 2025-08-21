@@ -1,6 +1,10 @@
 import { ConsoleConnection } from "$lib/ConsoleConnection";
 import { MidiController } from "$lib/MidiController";
-import { MessageCode, type ChannelSelector } from "presonus-studiolive-api";
+import {
+  MessageCode,
+  parseChannelString,
+  type ChannelSelector,
+} from "presonus-studiolive-api";
 import FaderPortDevice from "./device";
 import {
   BUTTON,
@@ -21,6 +25,7 @@ import { settingsPathToChannelSelector } from "presonus-studiolive-api/simple";
 import type { Faders16Channel } from "./lib/types";
 import { MAX_14 } from "./lib/valueGenerator";
 import type { MidiConnection } from "$lib/MidiConnection";
+import type { FaderPortConfig } from "./config";
 
 const layout = {
   FADER_ROW: [
@@ -92,26 +97,6 @@ const isChannelEqual = (a?: ChannelSelector, b?: ChannelSelector) => {
   return true;
 };
 
-type Tuple<
-  T,
-  N extends number,
-  R extends readonly T[] = []
-> = R["length"] extends N ? R : Tuple<T, N, readonly [T, ...R]>;
-
-interface ChannelAssignment {
-  channel: ChannelSelector;
-  override?: Partial<{
-    name: string;
-  }>;
-}
-
-type FaderPortConfigNChannel<N extends number> = {
-  model: N;
-  pages: Tuple<ChannelAssignment | undefined, N>[];
-};
-
-type FaderPortConfig = FaderPortConfigNChannel<8> | FaderPortConfigNChannel<16>;
-
 class FaderPortController extends MidiController<
   FaderPortDevice,
   FaderPortConfig
@@ -119,7 +104,6 @@ class FaderPortController extends MidiController<
   #selectedChannel?: ChannelSelector;
   #currentPage: number;
 
-  #console?: ConsoleConnection;
   #consoleListeners: EventRegistrationPersistence;
 
   /**
@@ -138,7 +122,7 @@ class FaderPortController extends MidiController<
     this.init();
   }
 
-  initDevice(connection: MidiConnection): void {
+  initMidiDevice(connection: MidiConnection): void {
     this.device = new FaderPortDevice(connection);
   }
 
@@ -150,19 +134,19 @@ class FaderPortController extends MidiController<
     for (const registration of flattenEventRegistration(
       this.#consoleListeners
     )) {
-      this.#console?.client.off(
+      this.console?.client.off(
         registration.event as any,
         registration.callback as any
       );
     }
   }
 
-  connectConsole(console: ConsoleConnection) {
-    if (this.#console) {
+  initConsole(consoleConnection: ConsoleConnection) {
+    if (this.console) {
       throw new Error("Console connection already established");
     }
 
-    console.withSession((client) => {
+    consoleConnection.withSession((client) => {
       client.on("level", (evt) => this.notifyFader(evt.channel, evt.level));
       client.on("mute", (evt) => this.notifyMute(evt.channel, evt.status));
       client.on("solo", (evt) => this.notifySolo(evt.channel, evt.status));
@@ -187,9 +171,28 @@ class FaderPortController extends MidiController<
           }
         }
       );
+      client.on(MessageCode.ParamString, ({ name, value }) => {
+        if (name.endsWith("username")) {
+          const channel = settingsPathToChannelSelector(name);
+          for (let i = 0; i < this.visibleChannels.length; i++) {
+            const visibleChannel = this.visibleChannels[i];
+            if (
+              !visibleChannel ||
+              !isChannelEqual(visibleChannel.channel, channel)
+            ) {
+              continue;
+            }
+            this.device.setScribbleStrip((i + 1) as Faders16Channel, 2, value);
+            break;
+          }
+        }
+      });
+      consoleConnection.client.once("connected", () => {
+        this.refreshVisibleChannels();
+      });
     }, this.#consoleListeners);
 
-    this.#console = console;
+    this.console = consoleConnection;
   }
 
   private notifyMute(channel: ChannelSelector, state: boolean) {
@@ -239,14 +242,17 @@ class FaderPortController extends MidiController<
   }
 
   private clearScribbleStrip(strip: Faders16Channel) {
-    this.device.setScribbleStripMode(strip, SCRIBBLE_STRIP_MODE.DEFAULT, true);
-    this.device.setScribbleStrip(strip, 1, "");
-    this.device.setScribbleStrip(strip, 2, "");
+    this.device.setScribbleStripMode(strip, SCRIBBLE_STRIP_MODE.DEFAULT, false);
+    // this.device.setScribbleStrip(strip, 1, "");
+    // this.device.setScribbleStrip(strip, 2, "");
+    // this.device.setScribbleStrip(strip, 3, "");
+    // this.device.setScribbleStrip(strip, 4, "");
   }
 
   private refreshVisibleChannels() {
-    if (!this.#console) {
-      throw new Error("Console connection not established");
+    if (!this.console) {
+      console.warn("Console connection not established");
+      return;
     }
 
     for (let i = 0; i < this.visibleChannels.length; i++) {
@@ -268,18 +274,18 @@ class FaderPortController extends MidiController<
 
       this.device.setFaderPosition100(
         (i + 1) as Faders16Channel,
-        this.#console.client.getLevel(visibleChannel.channel)
+        this.console.client.getLevel(visibleChannel.channel)
       );
 
       this.device.setLEDState(
         layout.MUTE_ROW[i],
-        this.#console.client.getMute(visibleChannel.channel)
+        this.console.client.getMute(visibleChannel.channel)
           ? BUTTON_STATE.ON
           : BUTTON_STATE.OFF
       );
       this.device.setLEDState(
         layout.SOLO_ROW[i],
-        this.#console.client.getSolo(visibleChannel.channel)
+        this.console.client.getSolo(visibleChannel.channel)
           ? BUTTON_STATE.ON
           : BUTTON_STATE.OFF
       );
@@ -290,7 +296,7 @@ class FaderPortController extends MidiController<
           : BUTTON_STATE.OFF
       );
 
-      let colour = this.#console.client.getColour(visibleChannel.channel);
+      let colour = this.console.client.getColour(visibleChannel.channel);
       if (typeof colour !== "string") colour = "ffffffff";
       this.device.setLEDColour(layout.SELECT_ROW_LED[i], [
         ...(<[number, number, number]>(<any>Buffer.from(colour, "hex"))),
@@ -313,16 +319,30 @@ class FaderPortController extends MidiController<
       //       break;
       //   }
 
-      // TODO: Get name from console
       this.device.setScribbleStrip(
         (i + 1) as Faders16Channel,
         1,
-        visibleChannel.override?.name ??
-          visibleChannel.channel.channel!.toString()
+        visibleChannel.channel.channel!.toString()
       );
+
+      if (visibleChannel.override?.name) {
+        this.device.setScribbleStrip(
+          (i + 1) as Faders16Channel,
+          2,
+          visibleChannel.override?.name
+        );
+      } else {
+        let path = `${parseChannelString(visibleChannel.channel)}/username`;
+        this.device.setScribbleStrip(
+          (i + 1) as Faders16Channel,
+          2,
+          this.console.client.state.get(path)
+        );
+      }
+
       this.device.setScribbleStrip(
         (i + 1) as Faders16Channel,
-        2,
+        3,
         visibleChannel.channel.type
       );
     }
@@ -341,7 +361,7 @@ class FaderPortController extends MidiController<
 
   init() {
     // TODO: we should probably call init automatically
-    console.log('init called');
+    console.log("init called");
     this.device.connection.on("noteon", (note) => {
       setImmediate(() => {
         const feedback = () => this.device.connection.send("noteon", note);
@@ -360,7 +380,7 @@ class FaderPortController extends MidiController<
         if (muteIndex >= 0) {
           if (!this.visibleChannels[muteIndex]) return;
           if (note.velocity === VELOCITY.NOTEON) {
-            this.#console?.client.toggleMute(
+            this.console?.client.toggleMute(
               this.visibleChannels[muteIndex].channel
             );
           }
@@ -373,7 +393,7 @@ class FaderPortController extends MidiController<
         if (soloIndex >= 0) {
           if (!this.visibleChannels[soloIndex]) return;
           if (note.velocity === VELOCITY.NOTEON) {
-            this.#console?.client.toggleSolo(
+            this.console?.client.toggleSolo(
               this.visibleChannels[soloIndex].channel
             );
           }
@@ -461,14 +481,28 @@ class FaderPortController extends MidiController<
               return;
             }
             case BUTTON.NEXT: {
-              this.setPageIndex(
-                Math.min(this.config.pages.length - 1, this.#currentPage + 1)
-              );
+              if (this.config.options?.pagesLoop) {
+                this.setPageIndex(
+                  (this.#currentPage + 1) % this.config.pages.length
+                );
+              } else {
+                this.setPageIndex(
+                  Math.min(this.config.pages.length - 1, this.#currentPage + 1)
+                );
+              }
+
               feedback();
               return;
             }
             case BUTTON.PREV: {
-              this.setPageIndex(Math.max(0, this.#currentPage - 1));
+              if (this.config.options?.pagesLoop) {
+                this.setPageIndex(
+                  (this.#currentPage - 1 + this.config.pages.length) %
+                    this.config.pages.length
+                );
+              } else {
+                this.setPageIndex(Math.max(0, this.#currentPage - 1));
+              }
               feedback();
               return;
             }
@@ -489,7 +523,7 @@ class FaderPortController extends MidiController<
         if (!this.visibleChannels[idx]) return;
         let level = (pitch.value / MAX_14) * 100;
 
-        this.#console?.client.setChannelVolumeLinear(
+        this.console?.client.setChannelVolumeLinear(
           this.visibleChannels[idx].channel,
           level
         );
