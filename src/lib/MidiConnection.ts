@@ -10,6 +10,8 @@ import {
   type EventRegistrationPersistence,
 } from "./EventRegistrationPersistence";
 import { nanoid } from "nanoid";
+import z from "zod";
+import type { MidiConnectionInterop } from "./types/MidiConnectionInterop";
 
 export class MidiConnectionManager {
   static discover() {
@@ -32,21 +34,23 @@ export class MidiConnectionManager {
     return MidiConnectionManager.discover();
   }
 
-  create(inputDevice: string | Input, outputDevice?: string | Output) {
-    const instance = new MidiConnection(
-      typeof inputDevice === "string"
-        ? (new easymidi.Input(inputDevice) as Input)
-        : inputDevice,
+  get(id: string) {
+    return this.#connections[id];
+  }
 
-      outputDevice
-        ? typeof outputDevice === "string"
-          ? (new easymidi.Output(outputDevice) as Output)
-          : outputDevice
-        : undefined
-    );
-
+  private register(instance: MidiConnection) {
     this.#connections[instance.id] = instance;
     return instance;
+  }
+
+  addFromConfig(config: MidiConnectionInterop) {
+    const instance = MidiConnection.fromConfig(config);
+    return this.register(instance);
+  }
+
+  create(input: string | Input, output?: string | Output) {
+    const instance = new MidiConnection(input, output);
+    return this.register(instance);
   }
 
   createVirtual(name: string): MidiConnection {
@@ -82,21 +86,45 @@ export class MidiConnectionManager {
 const portHasBeenRegistered = Symbol();
 
 export class MidiConnection {
-  readonly id: string;
+  private _id: string;
   private input!: Input;
   private output?: Output;
   private listeners: EventRegistrationPersistence;
+  name?: string
 
   /**
    *
    * @param input MIDI stream from the external port
    * @param output MIDI stream to the external port
    */
-  constructor(input: Input, output?: Output) {
+  constructor(input: string | Input, output?: string | Output) {
     this.listeners = {};
-    this.id = nanoid();
+    this._id = nanoid();
 
-    this.registerPorts(input, output);
+    this.registerPorts(
+      typeof input === "string" ? (new easymidi.Input(input) as Input) : input,
+      output
+        ? typeof output === "string"
+          ? (new easymidi.Output(output) as Output)
+          : output
+        : undefined
+    );
+  }
+
+  static fromConfig(config: MidiConnectionInterop) {
+    const instance = new this(config.input, config.output);
+    instance.name = config.name;
+    instance._id = config.id;
+    return instance;
+  }
+
+  toJSON(): MidiConnectionInterop {
+    return {
+      id: this.id,
+      name: this.name ?? "",
+      input: this.input.name,
+      output: this.output?.name,
+    };
   }
 
   private registerPorts(input: Input, output?: Output) {
@@ -116,6 +144,10 @@ export class MidiConnection {
   // reconnect() {
   //   throw new Error("MIDIConnection.reconnect() not implemented");
   // }
+
+  get id() {
+    return this._id;
+  }
 
   get on() {
     return this.input.on.bind(this.input);
