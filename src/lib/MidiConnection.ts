@@ -2,8 +2,9 @@
  * Midi Connections are the link to the ports
  */
 
-import type { Output, Input } from "$lib/types/easymidiInterop";
+import { Output as _Output, type Input } from "easymidi";
 import easymidi from "easymidi";
+
 import {
   proxyEventRegistrationInterface,
   restoreEventRegistrations,
@@ -11,6 +12,46 @@ import {
 } from "./EventRegistrationPersistence";
 import { nanoid } from "nanoid";
 import type { MidiConnectionInterop } from "./types/MidiConnectionInterop";
+import { EventEmitter } from "node:events";
+
+export class Output extends _Output {
+  #emitter: EventEmitter;
+  constructor(...args: ConstructorParameters<typeof _Output>) {
+    super(...args);
+    this.#emitter = new EventEmitter();
+    this.send = new Proxy(this.send, {
+      apply: (target, thisArg, argumentsList) => {
+        if (argumentsList.length === 1) {
+          // Message with no parameter
+          this.#emitter.emit("event", argumentsList[0]);
+        } else {
+          // Message with parameter
+          this.#emitter.emit("event", {
+            ...argumentsList[1],
+            _type: argumentsList[0],
+          });
+        }
+
+        return Reflect.apply(target, thisArg, argumentsList);
+      },
+    });
+  }
+
+  on(evt: "raw", callback: (...args: any[]) => void): void;
+  on(evt: "event", callback: (...args: any[]) => void): void;
+  on(evt: string, callback: (...args: any[]) => void) {
+    this.#emitter.on(evt, callback);
+  }
+
+  off(evt: "raw", callback: (...args: any[]) => void): void;
+  off(evt: "event", callback: (...args: any[]) => void): void;
+  off(evt: string, callback: (...args: any[]) => void) {
+    this.#emitter.off(evt, callback);
+  }
+  emitRaw(data: any) {
+    this.#emitter.emit("raw", data);
+  }
+}
 
 export class MidiConnectionManager {
   static discover() {
@@ -47,7 +88,7 @@ export class MidiConnectionManager {
     return this.register(instance);
   }
 
-  create(input: string | Input, output?: string | Output) {
+  create(input: string | Input, output?: string | _Output) {
     const instance = new MidiConnection(input, output);
     return this.register(instance);
   }
@@ -57,10 +98,10 @@ export class MidiConnectionManager {
       name + "-virtual",
       true
     ) as Input;
-    let outputDevice: Output = new easymidi.Output(
+    let outputDevice: _Output = new easymidi.Output(
       name + "-virtual",
       true
-    ) as Output;
+    ) as _Output;
 
     inputDevice.isPortOpen = () => true;
 
@@ -86,17 +127,17 @@ const portHasBeenRegistered = Symbol();
 
 export class MidiConnection {
   private _id: string;
-  private input!: Input;
-  private output?: Output;
+  input!: Input;
+  output?: Output;
   private listeners: EventRegistrationPersistence;
-  name?: string
+  name?: string;
 
   /**
    *
    * @param input MIDI stream from the external port
    * @param output MIDI stream to the external port
    */
-  constructor(input: string | Input, output?: string | Output) {
+  constructor(input: string | Input, output?: string | { name: string }) {
     this.listeners = {};
     this._id = nanoid();
 
@@ -104,8 +145,8 @@ export class MidiConnection {
       typeof input === "string" ? (new easymidi.Input(input) as Input) : input,
       output
         ? typeof output === "string"
-          ? (new easymidi.Output(output) as Output)
-          : output
+          ? new Output(output)
+          : new Output(output.name)
         : undefined
     );
   }
@@ -165,12 +206,13 @@ export class MidiConnection {
       console.warn("MIDI output port not assigned, dropping sendRaw() request");
       return;
     }
-    this.output._output.sendMessage(
-      Buffer.isBuffer(bytes) ? [...bytes] : bytes
-    );
+
+    const data = Buffer.isBuffer(bytes) ? [...bytes] : bytes;
+    this.output?.emitRaw(data);
+    this.output._output.sendMessage(data);
   }
 
-  send: Output["send"] = function (this: MidiConnection, ...args: any[]) {
+  send: _Output["send"] = function (this: MidiConnection, ...args: any[]) {
     if (!this.output) {
       console.warn("MIDI output port not assigned, dropping send() request");
       return;
