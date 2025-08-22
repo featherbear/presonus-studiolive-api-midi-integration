@@ -8,7 +8,7 @@ export const ConsoleConnectionInterop = z.object({
   name: z.string(),
   address: z.object({
     host: z.string(),
-    port: z.number().min(1).max(65535).optional().default(53000),
+    port: z.number().min(1).max(65535).default(53000).optional(),
   }) satisfies z.ZodType<ConstructorParameters<typeof SimpleClient>[0]>,
 });
 

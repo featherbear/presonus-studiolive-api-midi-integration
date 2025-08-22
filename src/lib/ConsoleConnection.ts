@@ -20,7 +20,7 @@ discoveryClient.on("discover", (entry: DiscoveryType) => {
   }
   discoveredConsoles[entry.serial] = entry;
 });
-discoveryClient.start()
+discoveryClient.start();
 
 function getDiscoveredConsoles() {
   let now = new Date();
@@ -77,6 +77,7 @@ export class ConsoleConnection {
   name?: string;
   private listeners: EventRegistrationPersistence;
   client: SimpleClient;
+  private _state: null | "connected" | "closed" | "error" | "reconnecting";
 
   constructor(manager: ConsoleConnectionManager, ...args: InitArgs) {
     this.context = {
@@ -86,6 +87,25 @@ export class ConsoleConnection {
     this.id = nanoid();
     this.listeners = {};
     this.client = this.createConsole(...args);
+
+    this.client.on("connected", () => {
+      this._state = "connected";
+    });
+    this.client.on("closed", () => {
+      this._state = "closed";
+    });
+    this.client.on("error", () => {
+      this._state = "error";
+    });
+    this.client.on("reconnecting", () => {
+      this._state = "reconnecting";
+    });
+
+    this._state = null;
+  }
+
+  get state() {
+    return this._state;
   }
 
   toJSON(): ConsoleConnectionInterop {

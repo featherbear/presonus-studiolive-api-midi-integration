@@ -97,8 +97,35 @@ export const contract = {
     getConsoleConnections: oc
       .route({
         method: "GET",
-        path: "/connections",
+        path: "/connection",
       })
       .output(z.array(ConsoleConnectionInterop)),
+    getConsoleConnection: oc
+      .route({
+        method: "GET",
+        path: "/connection/{id}",
+      })
+      .input(
+        z.object({
+          id: z.string().describe("Connection"),
+        })
+      )
+      .output(ConsoleConnectionInterop),
+      
+    getConsoleConnectionStatus: oc
+      .route({
+        method: "GET",
+        path: "/connection/{id}/status",
+      })
+      .input(
+        z.object({
+          id: z.string().describe("Connection"),
+        })
+      )
+      .output(
+        z.object({
+          state: z.any(),
+        })
+      ),
   }),
 };

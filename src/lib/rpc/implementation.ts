@@ -22,43 +22,46 @@ export const router = os.router({
     }),
 
     getMidiConnection: os.midi.getMidiConnection.handler(({ input }) => {
-      return midiConnectionManager.connections[input.id]?.toJSON();
-    }),
-
-    listenMidiConnection: os.midi.listenMidiConnection.handler(async function* ({
-      input,
-      signal,
-    }) {
-      let conn = midiConnectionManager.get(input.id);
+      const conn = midiConnectionManager.connections[input.id];
       if (!conn) {
         throw new Error(`MIDI connection ${input.id} not found`);
       }
-
-      const publisher = new EventPublisher<{
-        event: { type: "input" | "output"; data: any };
-      }>();
-
-      const inputCallback = (data: any) =>
-        publisher.publish("event", { type: "input", data });
-      const outputCallback = (data: any) =>
-        publisher.publish("event", { type: "output", data });
-
-      try {
-        conn.input.on("message", inputCallback);
-        // conn.output?.on('event', outputCallback);
-        // conn.output?.on('raw', outputCallback);
-
-        for await (const payload of publisher.subscribe("event", { signal })) {
-          yield payload;
-        }
-      } finally {
-        conn.input.off("message", inputCallback);
-        // conn.output?.off("event", outputCallback);
-        // conn.output?.off("raw", outputCallback);
-
-        console.log("Cleanup logic here");
-      }
+      return conn?.toJSON();
     }),
+
+    listenMidiConnection: os.midi.listenMidiConnection.handler(
+      async function* ({ input, signal }) {
+        let conn = midiConnectionManager.get(input.id);
+        if (!conn) {
+          throw new Error(`MIDI connection ${input.id} not found`);
+        }
+
+        const publisher = new EventPublisher<{
+          event: { type: "input" | "output"; data: any };
+        }>();
+
+        const inputCallback = (data: any) =>
+          publisher.publish("event", { type: "input", data });
+        const outputCallback = (data: any) =>
+          publisher.publish("event", { type: "output", data });
+
+        try {
+          conn.input.on("message", inputCallback);
+          // conn.output?.on('event', outputCallback);
+          // conn.output?.on('raw', outputCallback);
+
+          for await (const payload of publisher.subscribe("event", {
+            signal,
+          })) {
+            yield payload;
+          }
+        } finally {
+          conn.input.off("message", inputCallback);
+          // conn.output?.off("event", outputCallback);
+          // conn.output?.off("raw", outputCallback);
+        }
+      }
+    ),
 
     getMidiControllers: os.midi.getMidiControllers.handler(() => {
       // Note: No need to strip the config, it's handled via Zod
@@ -68,7 +71,12 @@ export const router = os.router({
     }),
 
     getMidiController: os.midi.getMidiController.handler(({ input }) => {
-      return midiControllerManager.connections[input.id]?.toJSON();
+      const controller = midiControllerManager.connections[input.id];
+      if (!controller) {
+        throw new Error(`MIDI controller ${input.id} not found`);
+      }
+
+      return controller.toJSON();
     }),
   },
   console: {
@@ -80,5 +88,27 @@ export const router = os.router({
         obj.toJSON()
       );
     }),
+    getConsoleConnection: os.console.getConsoleConnection.handler(
+      ({ input }) => {
+        const conn = consoleConnectionManager.connections[input.id];
+        if (!conn) {
+          throw new Error(`Console connection ${input.id} not found`);
+        }
+        return conn.toJSON();
+      }
+    ),
+
+    getConsoleConnectionStatus: os.console.getConsoleConnectionStatus.handler(
+      ({ input }) => {
+        let conn = consoleConnectionManager.connections[input.id];
+        if (!conn) {
+          throw new Error(`Console connection ${input.id} not found`);
+        }
+
+        return {
+          state: conn.state,
+        };
+      }
+    ),
   },
 });
