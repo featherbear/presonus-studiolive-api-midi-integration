@@ -1,4 +1,4 @@
-import { implement } from "@orpc/server";
+import { EventPublisher, implement } from "@orpc/server";
 import { contract } from "./contract";
 
 import {
@@ -23,6 +23,41 @@ export const router = os.router({
 
     getMidiConnection: os.midi.getMidiConnection.handler(({ input }) => {
       return midiConnectionManager.connections[input.id]?.toJSON();
+    }),
+
+    listenConnection: os.midi.listenConnection.handler(async function* ({
+      input,
+      signal,
+    }) {
+      let conn = midiConnectionManager.get(input.id);
+      if (!conn) {
+        throw new Error(`MIDI connection ${input.id} not found`);
+      }
+
+      const publisher = new EventPublisher<{
+        event: { type: "input" | "output"; data: any };
+      }>();
+
+      const inputCallback = (data: any) =>
+        publisher.publish("event", { type: "input", data });
+      const outputCallback = (data: any) =>
+        publisher.publish("event", { type: "output", data });
+
+      try {
+        conn.input.on("message", inputCallback);
+        // conn.output?.on('event', outputCallback);
+        // conn.output?.on('raw', outputCallback);
+
+        for await (const payload of publisher.subscribe("event", { signal })) {
+          yield payload;
+        }
+      } finally {
+        conn.input.off("message", inputCallback);
+        // conn.output?.off("event", outputCallback);
+        // conn.output?.off("raw", outputCallback);
+
+        console.log("Cleanup logic here");
+      }
     }),
 
     getMidiControllers: os.midi.getMidiControllers.handler(() => {

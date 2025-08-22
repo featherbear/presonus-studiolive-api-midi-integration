@@ -1,8 +1,11 @@
 import { z } from "zod";
-import { oc } from "@orpc/contract";
+import { eventIterator, oc } from "@orpc/contract";
 import { MidiConnectionInterop } from "$lib/types/MidiConnectionInterop";
 import { ConsoleConnectionInterop } from "$lib/types/ConsoleConnectionInterop";
-import { MidiControllerInterop, MidiControllerInteropNoConfig } from "$lib/types/MidiControllerInterop";
+import {
+  MidiControllerInterop,
+  MidiControllerInteropNoConfig,
+} from "$lib/types/MidiControllerInterop";
 
 export const contract = {
   midi: oc.prefix("/midi").router({
@@ -36,6 +39,25 @@ export const contract = {
         })
       )
       .output(MidiConnectionInterop),
+
+    listenConnection: oc
+      .route({
+        method: "GET",
+        path: "/connection/{id}/listen",
+      })
+      .input(
+        z.object({
+          id: z.string(),
+        })
+      )
+      .output(
+        eventIterator(
+          z.object({
+            type: z.enum(["input", "output"]),
+            data: z.any(),
+          })
+        )
+      ),
 
     getMidiControllers: oc
       .route({
