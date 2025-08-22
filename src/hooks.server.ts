@@ -1,5 +1,3 @@
-// import ConsoleConnection from "$lib/ConsoleConnection";
-
 export const load = () => {
   console.log("load hook");
 };
@@ -8,31 +6,15 @@ export const setup = () => {
   console.log("setup hook?");
 };
 
-import ConsoleConnectionManager from "$lib/ConsoleConnection";
-import MidiConnectionManager from "$lib/MidiConnection";
-import type { ConsoleConnectionInterop } from "$lib/types/ConsoleConnectionInterop";
-import type { MidiConnectionInterop } from "$lib/types/MidiConnectionInterop";
-import type { MidiControllerInterop } from "$lib/types/MidiControllerInterop";
-// // TODO: init hook
-// console.log("hooks");
-// // TODO: See how to integrate socketio
-
-// console.log('Current console connections', ConsoleConnection.connections);
-
 import fs from "node:fs";
-import { set } from "zod";
-import FaderPortController from "./controllers/presonus/faderport/controller";
-import MidiControllerManager from "$lib/MidiController";
+
 import type { FaderPortConfig } from "./controllers/presonus/faderport/config";
-import { MessageCode } from "presonus-studiolive-api";
+import type { AppSettings } from "$lib/types/AppSettings";
+import { init } from "./manager";
+
 const settingsFile = "settings.json";
-let settings: {
-  midi: {
-    connections: Record<string, MidiConnectionInterop>;
-    controllers: Record<string, MidiControllerInterop>;
-  };
-  consoles: Record<string, ConsoleConnectionInterop>;
-} = fs.existsSync(settingsFile)
+
+let settings: AppSettings = fs.existsSync(settingsFile)
   ? JSON.parse(fs.readFileSync(settingsFile, "utf-8"))
   : {
       midi: {
@@ -97,51 +79,4 @@ let settings: {
       },
     };
 
-for (const midiConnectionConfig of Object.values(settings.midi.connections)) {
-  const instance = MidiConnectionManager.addFromConfig(midiConnectionConfig);
-  console.log("Registered MIDI connection", midiConnectionConfig);
-}
-
-for (const consoleConfig of Object.values(settings.consoles)) {
-  const instance = ConsoleConnectionManager.addFromConfig(consoleConfig);
-  console.log("Registered console connection", consoleConfig);
-}
-
-for (const midiControllerConfig of Object.values(settings.midi.controllers)) {
-  const controllerClass = FaderPortController;
-  const midiConnection = MidiConnectionManager.get(
-    midiControllerConfig.midiConnectionId
-  );
-  if (!midiConnection) {
-    console.warn(
-      "FAILED to find MIDI connection",
-      midiControllerConfig.midiConnectionId
-    );
-    continue;
-  }
-
-  const consoleConnection = ConsoleConnectionManager.get(
-    midiControllerConfig.consoleId
-  );
-  if (!consoleConnection) {
-    console.warn(
-      "FAILED to find console connection",
-      midiControllerConfig.consoleId
-    );
-    continue;
-  }
-
-  const instance = new controllerClass(
-    midiConnection,
-    midiControllerConfig.config
-  );
-
-  MidiControllerManager.register(instance);
-  instance.initConsole(consoleConnection);
-  console.log("Registered MIDI Controller", midiControllerConfig);
-}
-
-fs.writeFileSync(
-  settingsFile + "-state.json",
-  JSON.stringify(settings, null, 4)
-);
+init(settings);

@@ -74,6 +74,7 @@ export class ConsoleConnection {
     initArgs: InitArgs;
   };
   id: string;
+  name?: string;
   private listeners: EventRegistrationPersistence;
   client: SimpleClient;
 
@@ -90,7 +91,7 @@ export class ConsoleConnection {
   toJSON(): ConsoleConnectionInterop {
     return {
       id: this.id,
-      name: "TODO: Set name",
+      name: this.name ?? "",
       address: this.context.initArgs[0],
     };
   }
@@ -125,6 +126,3 @@ export class ConsoleConnection {
     throw new Error("Reconnect not implemented");
   }
 }
-
-const consoleConnectionManagerInstance = new ConsoleConnectionManager();
-export default consoleConnectionManagerInstance;

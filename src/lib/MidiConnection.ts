@@ -10,7 +10,6 @@ import {
   type EventRegistrationPersistence,
 } from "./EventRegistrationPersistence";
 import { nanoid } from "nanoid";
-import z from "zod";
 import type { MidiConnectionInterop } from "./types/MidiConnectionInterop";
 
 export class MidiConnectionManager {
@@ -180,6 +179,3 @@ export class MidiConnection {
     return (this.output.send as any)(...args);
   };
 }
-
-const midiConnectionManagerInstance = new MidiConnectionManager();
-export default midiConnectionManagerInstance;

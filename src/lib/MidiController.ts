@@ -53,5 +53,3 @@ export abstract class MidiController<
   abstract initMidiDevice(connection: MidiConnection): void;
   abstract initConsole(console: ConsoleConnection): void;
 }
-
-export default new MidiControllerManager()
