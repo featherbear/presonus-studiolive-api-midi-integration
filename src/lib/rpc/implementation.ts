@@ -25,7 +25,7 @@ export const router = os.router({
       return midiConnectionManager.connections[input.id]?.toJSON();
     }),
 
-    listenConnection: os.midi.listenConnection.handler(async function* ({
+    listenMidiConnection: os.midi.listenMidiConnection.handler(async function* ({
       input,
       signal,
     }) {

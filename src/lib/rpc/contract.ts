@@ -40,7 +40,7 @@ export const contract = {
       )
       .output(MidiConnectionInterop),
 
-    listenConnection: oc
+    listenMidiConnection: oc
       .route({
         method: "GET",
         path: "/connection/{id}/listen",
