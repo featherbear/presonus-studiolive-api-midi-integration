@@ -1,10 +1,10 @@
 import { ConsoleConnection } from "$lib/ConsoleConnection";
-import { MidiController } from "$lib/MidiController";
+import { DeviceController } from "$lib/DeviceController";
 import {
   MessageCode,
   parseChannelString,
   type ChannelSelector,
-} from "presonus-studiolive-api";
+} from "@featherbear/presonus-studiolive-api";
 import FaderPortDevice from "./device";
 import {
   BUTTON,
@@ -21,7 +21,7 @@ import {
   proxyEventRegistrationInterface,
   type EventRegistrationPersistence,
 } from "$lib/EventRegistrationPersistence";
-import { settingsPathToChannelSelector } from "presonus-studiolive-api/simple";
+import { settingsPathToChannelSelector } from "@featherbear/presonus-studiolive-api/simple";
 import type { Faders16Channel } from "./lib/types";
 import { MAX_14 } from "./lib/valueGenerator";
 import type { MidiConnection } from "$lib/MidiConnection";
@@ -97,7 +97,7 @@ const isChannelEqual = (a?: ChannelSelector, b?: ChannelSelector) => {
   return true;
 };
 
-class FaderPortController extends MidiController<
+class FaderPortController extends DeviceController<
   FaderPortDevice,
   FaderPortConfig
 > {

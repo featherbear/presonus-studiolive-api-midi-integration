@@ -3,7 +3,7 @@ import z from "zod";
 export const MidiConnectionInterop = z.object({
   id: z.string(),
   name: z.string(),
-  input: z.string(),
+  input: z.string().nullable(),
   output: z.string().optional(),
 });
 

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { client } from "$lib/rpc/client";
-  client.midi.discoverMidiPorts();
 
   import { Alert, Button, Card, Heading } from "flowbite-svelte";
   import Edit from "./components/Edit.svelte";

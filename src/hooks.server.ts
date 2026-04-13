@@ -1,3 +1,4 @@
+
 export const load = () => {
   console.log("load hook");
 };

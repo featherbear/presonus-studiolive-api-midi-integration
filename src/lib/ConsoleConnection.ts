@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
-import { SimpleClient } from "presonus-studiolive-api/simple";
-import { Discovery, type DiscoveryType } from "presonus-studiolive-api";
+import { SimpleClient } from "@featherbear/presonus-studiolive-api/simple";
+import { Discovery, type DiscoveryType } from "@featherbear/presonus-studiolive-api";
 
 import {
   proxyEventRegistrationInterface,
@@ -77,7 +77,7 @@ export class ConsoleConnection {
   name?: string;
   private listeners: EventRegistrationPersistence;
   client: SimpleClient;
-  private _state: null | "connected" | "closed" | "error" | "reconnecting";
+  private _state: "connected" | "closed" | "error" | "reconnecting" | null;
 
   constructor(manager: ConsoleConnectionManager, ...args: InitArgs) {
     this.context = {
@@ -108,11 +108,12 @@ export class ConsoleConnection {
     return this._state;
   }
 
-  toJSON(): ConsoleConnectionInterop {
+  toJSON(): ConsoleConnectionInterop & { state: ConsoleConnection["state"] } {
     return {
       id: this.id,
       name: this.name ?? "",
       address: this.context.initArgs[0],
+      state: this.state,
     };
   }
 
@@ -129,7 +130,7 @@ export class ConsoleConnection {
 
   /**
    * Create a session for maintaining what event listeners are registered.
-   * Note: You should **not** store the client instance, as it may be released.
+   * Note: You should **not** store references to the PreSonus client instance, as it may change.
    */
   withSession(
     fn: (client: SimpleClient, listeners: EventRegistrationPersistence) => void,

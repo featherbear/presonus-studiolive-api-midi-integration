@@ -2,7 +2,7 @@
  * Midi Connections are the link to the ports
  */
 
-import { Output as _Output, type Input } from "easymidi";
+import { Output as _Output, Input } from "easymidi";
 import easymidi from "easymidi";
 
 import {
@@ -13,6 +13,8 @@ import {
 import { nanoid } from "nanoid";
 import type { MidiConnectionInterop } from "./types/MidiConnectionInterop";
 import { EventEmitter } from "node:events";
+import _logger from "$lib/logger";
+const logger = _logger.child({ module: "MidiConnection" });
 
 export class Output extends _Output {
   #emitter: EventEmitter;
@@ -78,6 +80,9 @@ export class MidiConnectionManager {
     return this.#connections[id];
   }
 
+  /**
+   * Register the connection with the manager
+   */
   private register(instance: MidiConnection) {
     this.#connections[instance.id] = instance;
     return instance;
@@ -93,17 +98,23 @@ export class MidiConnectionManager {
     return this.register(instance);
   }
 
-  createVirtual(name: string): MidiConnection {
+  static createVirtualPair(name: string) {
     let inputDevice: Input = new easymidi.Input(
-      name + "-virtual",
-      true
+      `${name}-virtual`,
+      true,
     ) as Input;
     let outputDevice: _Output = new easymidi.Output(
-      name + "-virtual",
-      true
+      `${name}-virtual`,
+      true,
     ) as _Output;
 
     inputDevice.isPortOpen = () => true;
+    return [inputDevice, outputDevice] as const;
+  }
+
+  createVirtual(name: string): MidiConnection {
+    const [inputDevice, outputDevice] =
+      MidiConnectionManager.createVirtualPair(name);
 
     let lastTime = new Date();
 
@@ -113,7 +124,7 @@ export class MidiConnectionManager {
         inputDevice._input.emit(
           "message",
           (currentTime.getTime() - lastTime.getTime()) / 1000,
-          bytes
+          bytes,
         );
         lastTime = currentTime;
       }
@@ -127,8 +138,18 @@ const portHasBeenRegistered = Symbol();
 
 export class MidiConnection {
   private _id: string;
-  input!: Input;
-  output?: Output;
+
+  private _connected: boolean;
+  private _midiTargets: {
+    input: string | Input;
+    output?: string | { name: string };
+  };
+
+  private _midiConnections: {
+    input: Input;
+    output?: Output;
+  };
+
   private listeners: EventRegistrationPersistence;
   name?: string;
 
@@ -140,30 +161,83 @@ export class MidiConnection {
   constructor(input: string | Input, output?: string | { name: string }) {
     this.listeners = {};
     this._id = nanoid();
+    this._connected = false;
 
-    this.registerPorts(
-      typeof input === "string" ? (new easymidi.Input(input) as Input) : input,
-      output
-        ? typeof output === "string"
-          ? new Output(output)
-          : new Output(output.name)
-        : undefined
-    );
+    this._midiTargets = {
+      input,
+      output,
+    };
+    this._midiConnections = {} as any;
+
+    this.reconnect();
+    setInterval(() => {
+      if (!this.connected) {
+        this.reconnect();
+      }
+    }, 5000);
+  }
+
+  reconnect() {
+    this._connected = false;
+
+    try {
+      this.registerPorts(
+        typeof this._midiTargets.input === "string"
+          ? (new easymidi.Input(this._midiTargets.input) as Input)
+          : this._midiTargets.input,
+        this._midiTargets.output
+          ? typeof this._midiTargets.output === "string"
+            ? new Output(this._midiTargets.output)
+            : new Output(this._midiTargets.output.name)
+          : undefined,
+      );
+
+      this._connected = true;
+    } catch {
+      logger.warn(
+        { input: this._midiTargets.input, output: this._midiTargets.output },
+        `Failed to connect MIDI ports`,
+      );
+
+      // Temporarily create a virtual MIDI connection until the real connection can be established
+
+      if (!this._midiConnections.input) {
+        const [inputDevice, outputDevice] =
+          MidiConnectionManager.createVirtualPair(this.id);
+        this.registerPorts(inputDevice, new Output(outputDevice.name));
+      }
+    }
+  }
+
+  get connected() {
+    return this._connected;
+  }
+
+  get logger() {
+    return logger.child({ connectionId: this.id });
   }
 
   static fromConfig(config: MidiConnectionInterop) {
-    const instance = new this(config.input, config.output);
+    const instance = new this(config.input!, config.output);
     instance.name = config.name;
     instance._id = config.id;
     return instance;
   }
 
-  toJSON(): MidiConnectionInterop {
+  toJSON(): MidiConnectionInterop & { connected: MidiConnection["connected"] } {
     return {
       id: this.id,
-      name: this.name ?? "",
-      input: this.input.name,
-      output: this.output?.name,
+      name: this.name ?? "(unknown)",
+      input:
+        typeof this._midiTargets.input === "string"
+          ? this._midiTargets.input
+          : this._midiTargets.input.name,
+      output: this._midiTargets.output
+        ? typeof this._midiTargets.output === "string"
+          ? this._midiTargets.output
+          : this._midiTargets.output.name
+        : undefined,
+      connected: this.connected,
     };
   }
 
@@ -177,8 +251,11 @@ export class MidiConnection {
       restoreEventRegistrations(input, this.listeners);
     }
 
-    this.input = proxyEventRegistrationInterface(input, this.listeners);
-    this.output = output;
+    this._midiConnections.input = proxyEventRegistrationInterface(
+      input,
+      this.listeners,
+    );
+    this._midiConnections.output = output;
   }
 
   // reconnect() {
@@ -190,34 +267,38 @@ export class MidiConnection {
   }
 
   get on() {
-    return this.input.on.bind(this.input);
+    return this._midiConnections.input.on.bind(this._midiConnections.input);
   }
 
   get once() {
-    return this.input.once.bind(this.input);
+    return this._midiConnections.input.once.bind(this._midiConnections.input);
   }
 
   get off() {
-    return this.input.off.bind(this.input);
+    return this._midiConnections.input.off.bind(this._midiConnections.input);
   }
 
   sendRaw(bytes: number[] | Buffer) {
-    if (!this.output) {
-      console.warn("MIDI output port not assigned, dropping sendRaw() request");
+    if (!this._midiConnections.output) {
+      this.logger.warn(
+        "MIDI output port not assigned, dropping sendRaw() request",
+      );
       return;
     }
 
     const data = Buffer.isBuffer(bytes) ? [...bytes] : bytes;
-    this.output?.emitRaw(data);
-    this.output._output.sendMessage(data);
+    this._midiConnections.output?.emitRaw(data);
+    this._midiConnections.output._output.sendMessage(data);
   }
 
   send: _Output["send"] = function (this: MidiConnection, ...args: any[]) {
-    if (!this.output) {
-      console.warn("MIDI output port not assigned, dropping send() request");
+    if (!this._midiConnections.output) {
+      this.logger.warn(
+        "MIDI output port not assigned, dropping send() request",
+      );
       return;
     }
 
-    return (this.output.send as any)(...args);
+    return (this._midiConnections.output.send as any)(...args);
   };
 }

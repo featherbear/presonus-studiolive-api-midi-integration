@@ -1,15 +1,32 @@
+import {
+  consoleConnectionManager,
+  midiConnectionManager,
+  deviceControllerManager,
+} from "../manager";
+
 type EntryType = {
   title: string;
   description?: string;
   result: ResultType | Promise<ResultType>;
 };
-type ResultType = { status: boolean; message?: string };
+type ResultType = { status: boolean; message?: string; data?: any };
 
 function wrapPromise<T>(promise: () => Promise<T>): Promise<ResultType> {
   return promise()
-    .then(() => ({
-      status: true,
-    }))
+    .then((data) => {
+      const response: ResultType = {
+        status: true,
+      };
+
+      console.log(data);
+
+      if (data) {
+        // Ensure the data is serializable by doing a deep copy via JSON
+        response.data = JSON.parse(JSON.stringify(data));
+      }
+
+      return response;
+    })
     .catch((e) => ({
       status: false,
       message: e instanceof Error ? e.message : "Unknown error",
@@ -18,20 +35,33 @@ function wrapPromise<T>(promise: () => Promise<T>): Promise<ResultType> {
 
 export function doHealthcheck() {
   const status: Record<string, EntryType> = {
-    WebServer: {
+    web: {
       title: "Web Server",
       description: "Health of the web server",
-      result: wrapPromise(async () => {}),
+      result: wrapPromise(async () => {
+        return true;
+      }),
     },
-    Console: {
-      title: "PreSonus Console",
-      description: "Connection to the StudioLive Series III console",
-      result: wrapPromise(async () => {}),
+    consoles: {
+      title: "PreSonus Mixers",
+      description: "Connections to the StudioLive Series III console",
+      result: wrapPromise(async () => {
+        return consoleConnectionManager.connections;
+      }),
     },
-    MIDI: {
-      title: "MIDI Device",
-      description: "Connection to the configured MIDI device",
-      result: wrapPromise(async () => {}),
+    midi: {
+      title: "MIDI Connections",
+      description: "Connections to MIDI devices",
+      result: wrapPromise(async () => {
+        return midiConnectionManager.connections;
+      }),
+    },
+    controllers: {
+      title: "Device Controllers",
+      description: "Controllers",
+      result: wrapPromise(async () => {
+        return deviceControllerManager.connections;
+      }),
     },
   };
 

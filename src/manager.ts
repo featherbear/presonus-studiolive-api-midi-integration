@@ -1,57 +1,60 @@
 import { ConsoleConnectionManager } from "$lib/ConsoleConnection";
+import _logger from "$lib/logger";
 import { MidiConnectionManager } from "$lib/MidiConnection";
-import { MidiControllerManager } from "$lib/MidiController";
+import { DeviceControllerManager } from "$lib/DeviceController";
 
 export const midiConnectionManager = new MidiConnectionManager();
-export const midiControllerManager = new MidiControllerManager();
 export const consoleConnectionManager = new ConsoleConnectionManager();
+
+export const deviceControllerManager = new DeviceControllerManager();
 
 import type { AppSettings } from "$lib/types/AppSettings";
 
 import FaderPortController from "./controllers/presonus/faderport/controller";
 
+const logger = _logger.child({ module: "manager" });
+
 export function init(settings: AppSettings) {
   for (const midiConnectionConfig of Object.values(settings.midi.connections)) {
     const instance = midiConnectionManager.addFromConfig(midiConnectionConfig);
-    console.log("Registered MIDI connection", midiConnectionConfig);
+    logger.info({ config: midiConnectionConfig }, "Registered MIDI connection");
   }
 
   for (const consoleConfig of Object.values(settings.consoles)) {
     const instance = consoleConnectionManager.addFromConfig(consoleConfig);
-    console.log("Registered console connection", consoleConfig);
+    logger.info({ config: consoleConfig }, "Registered console connection");
   }
 
-  for (const midiControllerConfig of Object.values(settings.midi.controllers)) {
-    const controllerClass = FaderPortController;
+  for (const deviceControllerConfig of Object.values(settings.midi.controllers)) {
     const midiConnection = midiConnectionManager.get(
-      midiControllerConfig.midiConnectionId
+      deviceControllerConfig.midiConnectionId,
     );
     if (!midiConnection) {
-      console.warn(
+      logger.warn(
+        { id: deviceControllerConfig.midiConnectionId },
         "FAILED to find MIDI connection",
-        midiControllerConfig.midiConnectionId
       );
       continue;
     }
 
     const consoleConnection = consoleConnectionManager.get(
-      midiControllerConfig.consoleId
+      deviceControllerConfig.consoleId,
     );
     if (!consoleConnection) {
-      console.warn(
+      logger.info(
+        { id: deviceControllerConfig.consoleId },
         "FAILED to find console connection",
-        midiControllerConfig.consoleId
       );
       continue;
     }
 
-    const instance = new controllerClass(
+    const instance = new FaderPortController(
       midiConnection,
-      midiControllerConfig.config
+      deviceControllerConfig.config,
     );
 
-    midiControllerManager.register(instance);
+    deviceControllerManager.register(instance);
     instance.initConsole(consoleConnection);
-    console.log("Registered MIDI Controller", midiControllerConfig);
+    logger.info({ config: deviceControllerConfig }, "Registered MIDI Controller");
   }
 }

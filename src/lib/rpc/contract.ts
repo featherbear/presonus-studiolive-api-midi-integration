@@ -3,9 +3,9 @@ import { eventIterator, oc } from "@orpc/contract";
 import { MidiConnectionInterop } from "$lib/types/MidiConnectionInterop";
 import { ConsoleConnectionInterop } from "$lib/types/ConsoleConnectionInterop";
 import {
-  MidiControllerInterop,
-  MidiControllerInteropNoConfig,
-} from "$lib/types/MidiControllerInterop";
+  DeviceControllerInteropWithConfig,
+  DeviceControllerInterop,
+} from "$lib/types/DeviceControllerInterop";
 
 export const contract = {
   midi: oc.prefix("/midi").router({
@@ -58,14 +58,15 @@ export const contract = {
           })
         )
       ),
-
-    getMidiControllers: oc
+  }),
+  controller: oc.router({
+    getDeviceControllers: oc
       .route({
         method: "GET",
         path: "/controller",
       })
-      .output(z.array(MidiControllerInteropNoConfig)),
-    getMidiController: oc
+      .output(z.array(DeviceControllerInterop)),
+    getDeviceController: oc
       .route({
         method: "GET",
         path: "/controller/{id}",
@@ -75,7 +76,7 @@ export const contract = {
           id: z.string().describe("Controller"),
         })
       )
-      .output(MidiControllerInterop),
+      .output(DeviceControllerInteropWithConfig),
   }),
   console: oc.prefix("/console").router({
     discover: oc

@@ -1,11 +1,11 @@
 import { nanoid } from "nanoid";
 import type { MidiDevice } from "./MidiDevice";
 import type { MidiConnection } from "./MidiConnection";
-import type { MidiControllerInterop } from "./types/MidiControllerInterop";
+import type { DeviceControllerInterop } from "./types/DeviceControllerInterop";
 import type { ConsoleConnection } from "./ConsoleConnection";
 
-export class MidiControllerManager {
-  #controllers: Record<string, MidiController>;
+export class DeviceControllerManager {
+  #controllers: Record<string, DeviceController>;
   constructor() {
     this.#controllers = {};
   }
@@ -14,13 +14,13 @@ export class MidiControllerManager {
     return this.#controllers;
   }
 
-  register<T extends MidiController>(instance: T): T {
+  register<T extends DeviceController>(instance: T): T {
     this.#controllers[instance.id] = instance;
     return instance;
   }
 }
 
-export abstract class MidiController<
+export abstract class DeviceController<
   D extends MidiDevice = MidiDevice,
   Config = any
 > {
@@ -40,13 +40,12 @@ export abstract class MidiController<
     }
   }
 
-  toJSON(): MidiControllerInterop {
+  toJSON(): DeviceControllerInterop {
     return {
       id: this.id,
       type: "TODO: implement type",
       consoleId: this.console?.id,
       midiConnectionId: this.device.connection.id,
-      config: this.config,
     };
   }
 

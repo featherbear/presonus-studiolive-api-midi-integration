@@ -1,7 +1,7 @@
 import z from "zod";
 
 // FIXME: Expose ConnectionAddress
-import type { SimpleClient } from "presonus-studiolive-api/simple";
+import type { SimpleClient } from "@featherbear/presonus-studiolive-api/simple";
 
 export const ConsoleConnectionInterop = z.object({
   id: z.string(),

@@ -3,7 +3,7 @@ import { contract } from "./contract";
 
 import {
   midiConnectionManager,
-  midiControllerManager,
+  deviceControllerManager,
   consoleConnectionManager,
 } from "../../manager";
 
@@ -17,7 +17,7 @@ export const router = os.router({
 
     getMidiConnections: os.midi.getMidiConnections.handler(() => {
       return Object.values(midiConnectionManager.connections).map((obj) =>
-        obj.toJSON()
+        obj.toJSON(),
       );
     }),
 
@@ -60,18 +60,19 @@ export const router = os.router({
           // conn.output?.off("event", outputCallback);
           // conn.output?.off("raw", outputCallback);
         }
-      }
+      },
     ),
-
-    getMidiControllers: os.midi.getMidiControllers.handler(() => {
+  },
+  controller: {
+    getDeviceControllers: os.controller.getDeviceControllers.handler(() => {
       // Note: No need to strip the config, it's handled via Zod
-      return Object.values(midiControllerManager.connections).map((obj) =>
-        obj.toJSON()
+      return Object.values(deviceControllerManager.connections).map((obj) =>
+        obj.toJSON(),
       );
     }),
 
-    getMidiController: os.midi.getMidiController.handler(({ input }) => {
-      const controller = midiControllerManager.connections[input.id];
+    getDeviceController: os.controller.getDeviceController.handler(({ input }) => {
+      const controller = deviceControllerManager.connections[input.id];
       if (!controller) {
         throw new Error(`MIDI controller ${input.id} not found`);
       }
@@ -85,7 +86,7 @@ export const router = os.router({
     }),
     getConsoleConnections: os.console.getConsoleConnections.handler(() => {
       return Object.values(consoleConnectionManager.connections).map((obj) =>
-        obj.toJSON()
+        obj.toJSON(),
       );
     }),
     getConsoleConnection: os.console.getConsoleConnection.handler(
@@ -95,7 +96,7 @@ export const router = os.router({
           throw new Error(`Console connection ${input.id} not found`);
         }
         return conn.toJSON();
-      }
+      },
     ),
 
     getConsoleConnectionStatus: os.console.getConsoleConnectionStatus.handler(
@@ -108,7 +109,7 @@ export const router = os.router({
         return {
           state: conn.state,
         };
-      }
+      },
     ),
   },
 });

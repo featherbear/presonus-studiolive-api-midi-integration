@@ -1,4 +1,4 @@
-import type { ChannelSelector } from "presonus-studiolive-api";
+import type { ChannelSelector } from "@featherbear/presonus-studiolive-api";
 
 type Tuple<
   T,
