@@ -1,95 +1,44 @@
 # PreSonus StudioLive API MIDI Integration
 
-A SvelteKit application for bridging local MIDI control surfaces to PreSonus StudioLive mixers through `@featherbear/presonus-studiolive-api`.
+Use local MIDI surfaces to control PreSonus StudioLive mixers through `@featherbear/presonus-studiolive-api`.
 
-The project is currently a working prototype. It has a browser setup UI, runtime settings persistence, MIDI device discovery, StudioLive discovery, health checks, and an initial PreSonus FaderPort controller implementation.
+The app currently provides browser-based setup, runtime settings persistence, health checks, and a PreSonus FaderPort 8/16 controller implementation.
 
-## Current Capabilities
+## Current Features
 
-- Configure StudioLive mixer connections from `/setup/console`.
-- Connect to mixers by fixed IP/port or by discovered console serial number.
-- Configure MIDI devices from `/setup/midi`.
-- Configure controller mappings from `/setup/controller`.
-- Edit FaderPort channel pages and slot assignments in the controller setup UI.
-- Persist configuration to `settings.json`.
-- Expose health status at `/health` and `/health.json`.
-- Expose the oRPC/OpenAPI API at `/api`.
+- Configure StudioLive mixers by serial discovery or fixed IP/port.
+- Configure local MIDI devices from discovered MIDI ports.
+- Configure controllers that map MIDI devices to StudioLive mixers.
+- Configure FaderPort channel pages and fader slot assignments.
+- Delete saved mixers, MIDI devices, and controllers with confirmation prompts.
+- View runtime health at `/health` or `/health.json`.
+- View API docs at `/api`.
 
-## Requirements
+## Setup UI
 
-- Node.js
-- pnpm
-- Local MIDI access for hardware controllers
-- Network access to the StudioLive mixer
+- `/setup/console`: add, edit, or delete StudioLive mixer connections.
+- `/setup/midi`: add, edit, or delete MIDI devices.
+- `/setup/controller`: add, edit, or delete controllers and channel pages.
 
-## Development
-
-Install dependencies:
-
-```sh
-pnpm install
-```
-
-Run the development server:
-
-```sh
-pnpm dev
-```
-
-Open the app in the browser and use the Setup menu to configure consoles, MIDI devices, and controllers.
+Consoles and MIDI devices cannot be deleted while a saved controller still references them. Delete or reassign the controller first.
 
 ## Configuration
 
-Runtime configuration is stored in `settings.json` at the project root. The app reads this file at startup. If it does not exist, the app falls back to default prototype settings defined in `src/lib/settings.ts`.
+Settings are stored in `settings.json` at the project root. If the file does not exist, prototype defaults from `src/lib/settings.ts` are used.
 
-The `.env.example` file is not currently used by the app runtime. Older README instructions that referenced copying `.env.example` and setting `CONSOLE_HOST`, `MIDI_DEVICE`, or server variables are obsolete.
+## Development
 
-The main settings sections are:
-
-- `consoles`: StudioLive mixer connections, either by `address` or `serial`.
-- `midi.connections`: local MIDI input/output device definitions.
-- `midi.controllers`: controller definitions and their channel page configuration.
-
-Most settings should be edited through the setup UI rather than by hand.
-
-## Setup Pages
-
-- `/setup/console`: add or edit StudioLive mixer connections. Serial discovery is preferred when the mixer IP may change.
-- `/setup/midi`: add or edit MIDI devices using discovered local MIDI ports.
-- `/setup/controller`: add or edit controller definitions and configure which mixer channels appear on each controller page.
+```sh
+pnpm install
+pnpm dev
+```
 
 ## Supported Controllers
 
-The active controller implementation is focused on PreSonus FaderPort-style devices, especially the FaderPort 8/16 page and fader model.
+Current support is focused on PreSonus FaderPort-style devices, especially FaderPort 8 and FaderPort 16.
 
-The controller layer is still evolving. Additional controller support would be beneficial in the future, especially for:
+Future controller support that would be useful:
 
 - Behringer X-Touch Compact
 - Behringer X-Touch Extender
 - Icon Platform M or Platform M+
-
-## Health And API
-
-- `/health`: browser UI showing web, mixer, MIDI device, and controller health.
-- `/health.json`: JSON health response.
-- `/api`: API documentation and oRPC/OpenAPI endpoint.
-
-## Known Limitations
-
-- This is still a prototype and has incomplete areas.
-- Delete actions in setup modals are not fully implemented.
-- The old `src/test.ts` script is stale and currently does not type-check.
-- Some FaderPort utility typing in `valueGenerator.ts` is still broken.
-- The Socket.IO/WebMIDI path referenced by older code is not currently implemented.
-- Configuration changes are saved to `settings.json`; some runtime changes require the live manager/controller path to rebuild the affected connection or controller.
-
-## Verification
-
-Useful commands:
-
-```sh
-pnpm exec svelte-check --output machine
-pnpm exec tsc --noEmit --pretty false
-```
-
-At the time of writing, these checks still report known baseline issues in `src/controllers/presonus/faderport/lib/valueGenerator.ts` and stale `src/test.ts`.
