@@ -1,5 +1,6 @@
 import { doHealthcheck } from "$lib/healthcheck";
+import type { PageServerLoad } from "./$types";
 
-export function load({ params }) {
+export const load: PageServerLoad = () => {
   return { ...doHealthcheck() };
-}
+};

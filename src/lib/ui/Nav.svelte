@@ -1,77 +1,55 @@
 <script lang="ts">
-  export let segment: string;
+  import { page } from "$app/state";
+  import {
+    Dropdown,
+    DropdownItem,
+    Navbar,
+    NavBrand,
+    NavHamburger,
+    NavLi,
+    NavUl,
+  } from "flowbite-svelte";
 
-  let webMIDIenabled = false;
-  // import { stores } from "@sapper/app";
-  // const { session } = stores();
+  const setupLinks = [
+    { href: "/setup/console", label: "Consoles" },
+    { href: "/setup/midi", label: "MIDI Devices" },
+    { href: "/setup/controller", label: "Controllers" },
+  ];
 
-  // let webMIDIenabled = $session.capabilities.webmidi;
+  const isSetupActive = () => page.url.pathname.startsWith("/setup");
+
+  const setupActiveClass =
+    "bg-primary-700 text-white md:bg-transparent md:text-primary-700 md:dark:bg-transparent md:dark:text-white";
 </script>
 
-<nav>
-  <ul>
-    <li>
-      <a aria-current={segment === undefined ? "page" : undefined} href="."
-        >home</a
+<Navbar
+  navContainerClass="mx-auto max-w-5xl px-6"
+  class="relative z-10 border-b border-gray-200 shadow-md dark:border-gray-700"
+>
+  {#snippet children({ toggle })}
+    <NavBrand href="/">
+      <span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white">
+        StudioLive MIDI
+      </span>
+    </NavBrand>
+    <NavHamburger onclick={toggle} />
+    <NavUl activeUrl={page.url.pathname}>
+      <NavLi href="/">Home</NavLi>
+      <NavLi href="/health">Health</NavLi>
+      <NavLi
+        id="setup-menu-button"
+        class={isSetupActive() ? setupActiveClass : ""}
+      >Setup</NavLi>
+      <Dropdown
+        simple
+        activeUrl={page.url.pathname}
+        triggeredBy="#setup-menu-button"
+        placement="bottom-start"
       >
-    </li>
-    <li>
-      <a
-        aria-current={segment === "webmidi" ? "page" : undefined}
-        href={webMIDIenabled ? "webmidi" : "javascript:"}
-        on:click={() => {
-          if (webMIDIenabled) return;
-          alert("WebMIDI is not enabled in the server configuration")
-        }}
-      >
-        WebMIDI {webMIDIenabled ? "" : "(disabled)"}
-      </a>
-    </li>
-  </ul>
-</nav>
-
-<style>
-  nav {
-    border-bottom: 1px solid rgba(255, 62, 0, 0.1);
-    font-weight: 300;
-    padding: 0 1em;
-  }
-
-  ul {
-    margin: 0;
-    padding: 0;
-  }
-
-  /* clearfix */
-  ul::after {
-    content: "";
-    display: block;
-    clear: both;
-  }
-
-  li {
-    display: block;
-    float: left;
-  }
-
-  [aria-current] {
-    position: relative;
-    display: inline-block;
-  }
-
-  [aria-current]::after {
-    position: absolute;
-    content: "";
-    width: calc(100% - 1em);
-    height: 2px;
-    background-color: rgb(255, 62, 0);
-    display: block;
-    bottom: -1px;
-  }
-
-  a {
-    text-decoration: none;
-    padding: 1em 0.5em;
-    display: block;
-  }
-</style>
+        {#each setupLinks as link}
+          <DropdownItem href={link.href}>{link.label}</DropdownItem>
+        {/each}
+      </Dropdown>
+    </NavUl>
+  {/snippet}
+</Navbar>

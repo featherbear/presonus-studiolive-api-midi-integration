@@ -11,18 +11,51 @@ type EntryType = {
 };
 type ResultType = { status: boolean; message?: string; data?: any };
 
-function wrapPromise<T>(promise: () => Promise<T>): Promise<ResultType> {
+function serialize<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function withState<T extends Record<string, any>>(
+  data: Record<string, T>,
+  getState: (item: T) => string,
+) {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, item]) => [
+      key,
+      {
+        ...item,
+        state: getState(item),
+      },
+    ]),
+  );
+}
+
+function isHealthyState(state: unknown) {
+  return state === "connected" || state === "registered";
+}
+
+function getMapHealth(data: unknown) {
+  if (!data || typeof data !== "object") return true;
+
+  return Object.values(data).every((item) => {
+    if (!item || typeof item !== "object" || !("state" in item)) return false;
+    return isHealthyState((item as { state: unknown }).state);
+  });
+}
+
+function wrapPromise<T>(
+  promise: () => Promise<T>,
+  getStatus: (data: T) => boolean = () => true,
+): Promise<ResultType> {
   return promise()
     .then((data) => {
       const response: ResultType = {
-        status: true,
+        status: getStatus(data),
       };
-
-      console.log(data);
 
       if (data) {
         // Ensure the data is serializable by doing a deep copy via JSON
-        response.data = JSON.parse(JSON.stringify(data));
+        response.data = serialize(data);
       }
 
       return response;
@@ -39,29 +72,34 @@ export function doHealthcheck() {
       title: "Web Server",
       description: "Health of the web server",
       result: wrapPromise(async () => {
-        return true;
+        return;
       }),
     },
     consoles: {
       title: "PreSonus Mixers",
       description: "Connections to the StudioLive Series III console",
       result: wrapPromise(async () => {
-        return consoleConnectionManager.connections;
-      }),
+        const data = serialize(consoleConnectionManager.connections);
+        return withState(data, (item) => item.state ?? "unknown");
+      }, getMapHealth),
     },
     midi: {
-      title: "MIDI Connections",
+      title: "MIDI Devices",
       description: "Connections to MIDI devices",
       result: wrapPromise(async () => {
-        return midiConnectionManager.connections;
-      }),
+        const data = serialize(midiConnectionManager.connections);
+        return withState(data, (item) =>
+          item.connected ? "connected" : "disconnected",
+        );
+      }, getMapHealth),
     },
     controllers: {
       title: "Device Controllers",
       description: "Controllers",
       result: wrapPromise(async () => {
-        return deviceControllerManager.connections;
-      }),
+        const data = serialize(deviceControllerManager.connections);
+        return withState(data, () => "registered");
+      }, getMapHealth),
     },
   };
 
