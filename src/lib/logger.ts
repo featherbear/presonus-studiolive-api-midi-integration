@@ -6,7 +6,9 @@ const logLevel =
     : "info";
 
 const logger = pino({
-  name: "presonus-studiolive-midi-integration",
+  base: {
+    name: "presonus-studiolive-midi-integration",
+  },
   level: logLevel,
 });
 
