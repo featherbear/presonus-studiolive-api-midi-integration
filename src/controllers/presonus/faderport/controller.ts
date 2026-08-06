@@ -277,20 +277,23 @@ class FaderPortController extends DeviceController<
 
     for (let i = 0; i < this.visibleChannels.length; i++) {
       const visibleChannel = this.visibleChannels[i];
-      if (!visibleChannel) {
-        // Channel is not set
-        this.device.setLEDColour(layout.SELECT_ROW_LED[i], [
-          ...(<[number, number, number]>(<any>Buffer.from("ffffff", "hex"))),
-        ]);
-        this.device.setLEDState(layout.SELECT_ROW_LED[i], BUTTON_STATE.OFF);
-        this.device.setLEDState(layout.MUTE_ROW[i], BUTTON_STATE.OFF);
-        this.device.setLEDState(layout.SOLO_ROW[i], BUTTON_STATE.OFF);
-        this.device.setFaderPosition14((i + 1) as Faders16Channel, 0);
+      if (visibleChannel) continue;
 
-        this.clearScribbleStrip((i + 1) as Faders16Channel);
+      // Clear unassigned strips before updating assigned channels.
+      this.device.setLEDColour(layout.SELECT_ROW_LED[i], [
+        ...(<[number, number, number]>(<any>Buffer.from("ffffff", "hex"))),
+      ]);
+      this.device.setLEDState(layout.SELECT_ROW_LED[i], BUTTON_STATE.OFF);
+      this.device.setLEDState(layout.MUTE_ROW[i], BUTTON_STATE.OFF);
+      this.device.setLEDState(layout.SOLO_ROW[i], BUTTON_STATE.OFF);
+      this.device.setFaderPosition14((i + 1) as Faders16Channel, 0);
 
-        continue;
-      }
+      this.clearScribbleStrip((i + 1) as Faders16Channel);
+    }
+
+    for (let i = 0; i < this.visibleChannels.length; i++) {
+      const visibleChannel = this.visibleChannels[i];
+      if (!visibleChannel) continue;
 
       this.device.setFaderPosition100(
         (i + 1) as Faders16Channel,
