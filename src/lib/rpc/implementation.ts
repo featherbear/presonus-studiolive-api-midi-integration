@@ -1,10 +1,17 @@
 import { EventPublisher, implement } from "@orpc/server";
+import { nanoid } from "nanoid";
 import { contract } from "./contract";
+import {
+  saveConsoleConnectionSettings,
+  saveDeviceControllerSettings,
+  saveMidiConnectionSettings,
+} from "$lib/settings";
 
 import {
   midiConnectionManager,
   deviceControllerManager,
   consoleConnectionManager,
+  createDeviceControllerFromConfig,
 } from "../../manager";
 
 const os = implement(contract);
@@ -29,6 +36,21 @@ export const router = os.router({
       return conn?.toJSON();
     }),
 
+    saveMidiConnection: os.midi.saveMidiConnection.handler(({ input }) => {
+      if (!input.input) {
+        throw new Error("MIDI input port is required");
+      }
+
+      const connection = {
+        ...input,
+        output: input.output || undefined,
+        id: input.id || nanoid(),
+      };
+
+      saveMidiConnectionSettings(connection);
+      return midiConnectionManager.addFromConfig(connection).toJSON();
+    }),
+
     listenMidiConnection: os.midi.listenMidiConnection.handler(
       async function* ({ input, signal }) {
         let conn = midiConnectionManager.get(input.id);
@@ -46,7 +68,7 @@ export const router = os.router({
           publisher.publish("event", { type: "output", data });
 
         try {
-          conn.input.on("message", inputCallback);
+          conn.on("message", inputCallback);
           // conn.output?.on('event', outputCallback);
           // conn.output?.on('raw', outputCallback);
 
@@ -56,7 +78,7 @@ export const router = os.router({
             yield payload;
           }
         } finally {
-          conn.input.off("message", inputCallback);
+          conn.off("message", inputCallback);
           // conn.output?.off("event", outputCallback);
           // conn.output?.off("raw", outputCallback);
         }
@@ -79,6 +101,20 @@ export const router = os.router({
 
       return controller.toJSON();
     }),
+
+    saveDeviceController: os.controller.saveDeviceController.handler(
+      ({ input }) => {
+        const controller = {
+          ...input,
+          type: input.type === "AAAA" ? "faderport" : input.type,
+          id: input.id || nanoid(),
+        };
+
+        const instance = createDeviceControllerFromConfig(controller).toJSON();
+        saveDeviceControllerSettings(instance);
+        return instance;
+      },
+    ),
   },
   console: {
     discover: os.console.discover.handler(async () => {
@@ -96,6 +132,24 @@ export const router = os.router({
           throw new Error(`Console connection ${input.id} not found`);
         }
         return conn.toJSON();
+      },
+    ),
+
+    saveConsoleConnection: os.console.saveConsoleConnection.handler(
+      ({ input }) => {
+        const address = input.address?.host ? input.address : undefined;
+        if (!input.serial && !address) {
+          throw new Error("Console connection requires a serial or address");
+        }
+
+        const connection = {
+          ...input,
+          address,
+          id: input.id || nanoid(),
+        };
+
+        saveConsoleConnectionSettings(connection);
+        return consoleConnectionManager.addFromConfig(connection).toJSON();
       },
     ),
 

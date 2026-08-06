@@ -89,6 +89,11 @@ export class MidiConnectionManager {
   }
 
   addFromConfig(config: MidiConnectionInterop) {
+    const existingConnection = this.get(config.id);
+    if (existingConnection) {
+      return existingConnection.updateFromConfig(config);
+    }
+
     const instance = MidiConnection.fromConfig(config);
     return this.register(instance);
   }
@@ -151,6 +156,7 @@ export class MidiConnection {
   };
 
   private listeners: EventRegistrationPersistence;
+  private reconnectInterval: ReturnType<typeof setInterval>;
   name?: string;
 
   /**
@@ -170,7 +176,7 @@ export class MidiConnection {
     this._midiConnections = {} as any;
 
     this.reconnect();
-    setInterval(() => {
+    this.reconnectInterval = setInterval(() => {
       if (!this.connected) {
         this.reconnect();
       }
@@ -222,6 +228,30 @@ export class MidiConnection {
     instance.name = config.name;
     instance._id = config.id;
     return instance;
+  }
+
+  updateFromConfig(config: MidiConnectionInterop) {
+    this.closePorts();
+    this._id = config.id;
+    this.name = config.name;
+    this._midiTargets = {
+      input: config.input!,
+      output: config.output,
+    };
+    this.reconnect();
+    return this;
+  }
+
+  private closePorts() {
+    this._connected = false;
+    this._midiConnections.input?.close?.();
+    this._midiConnections.output?.close?.();
+    this._midiConnections = {} as any;
+  }
+
+  close() {
+    clearInterval(this.reconnectInterval);
+    this.closePorts();
   }
 
   toJSON(): MidiConnectionInterop & { connected: MidiConnection["connected"] } {

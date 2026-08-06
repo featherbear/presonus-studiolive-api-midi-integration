@@ -11,6 +11,7 @@ export const deviceControllerManager = new DeviceControllerManager();
 import type { AppSettings } from "$lib/types/AppSettings";
 
 import FaderPortController from "./controllers/presonus/faderport/controller";
+import type { DeviceControllerInteropWithConfig } from "$lib/types/DeviceControllerInterop";
 
 const logger = _logger.child({ module: "manager" });
 
@@ -48,13 +49,34 @@ export function init(settings: AppSettings) {
       continue;
     }
 
-    const instance = new FaderPortController(
-      midiConnection,
-      deviceControllerConfig.config,
-    );
+    const instance = createDeviceControllerFromConfig(deviceControllerConfig);
+    if (!instance) continue;
 
-    deviceControllerManager.register(instance);
-    instance.initConsole(consoleConnection);
     logger.info({ config: deviceControllerConfig }, "Registered MIDI Controller");
   }
+}
+
+export function createDeviceControllerFromConfig(
+  config: DeviceControllerInteropWithConfig,
+) {
+  const midiConnection = midiConnectionManager.get(config.midiConnectionId);
+  if (!midiConnection) {
+    throw new Error(`MIDI connection ${config.midiConnectionId} not found`);
+  }
+
+  const consoleConnection = consoleConnectionManager.get(config.consoleId);
+  if (!consoleConnection) {
+    throw new Error(`Console connection ${config.consoleId} not found`);
+  }
+
+  if (config.type !== "faderport" && config.type !== "AAAA") {
+    throw new Error(`Unsupported controller type ${config.type}`);
+  }
+
+  const instance = new FaderPortController(midiConnection, config.config);
+  instance.id = config.id;
+  instance.type = "faderport";
+  deviceControllerManager.register(instance);
+  instance.initConsole(consoleConnection);
+  return instance;
 }

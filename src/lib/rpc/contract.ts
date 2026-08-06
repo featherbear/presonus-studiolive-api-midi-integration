@@ -40,6 +40,18 @@ export const contract = {
       )
       .output(MidiConnectionInterop),
 
+    saveMidiConnection: oc
+      .route({
+        method: "PUT",
+        path: "/connection",
+      })
+      .input(
+        MidiConnectionInterop.omit({ id: true }).extend({
+          id: z.string().optional(),
+        })
+      )
+      .output(MidiConnectionInterop),
+
     listenMidiConnection: oc
       .route({
         method: "GET",
@@ -65,7 +77,7 @@ export const contract = {
         method: "GET",
         path: "/controller",
       })
-      .output(z.array(DeviceControllerInterop)),
+      .output(z.array(DeviceControllerInteropWithConfig)),
     getDeviceController: oc
       .route({
         method: "GET",
@@ -74,6 +86,18 @@ export const contract = {
       .input(
         z.object({
           id: z.string().describe("Controller"),
+        })
+      )
+      .output(DeviceControllerInteropWithConfig),
+
+    saveDeviceController: oc
+      .route({
+        method: "PUT",
+        path: "/controller",
+      })
+      .input(
+        DeviceControllerInteropWithConfig.omit({ id: true }).extend({
+          id: z.string().optional(),
         })
       )
       .output(DeviceControllerInteropWithConfig),
@@ -112,7 +136,19 @@ export const contract = {
         })
       )
       .output(ConsoleConnectionInterop),
-      
+
+    saveConsoleConnection: oc
+      .route({
+        method: "PUT",
+        path: "/connection",
+      })
+      .input(
+        ConsoleConnectionInterop.omit({ id: true }).extend({
+          id: z.string().optional(),
+        })
+      )
+      .output(ConsoleConnectionInterop),
+
     getConsoleConnectionStatus: oc
       .route({
         method: "GET",

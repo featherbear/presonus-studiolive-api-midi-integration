@@ -6,7 +6,6 @@
     Input,
     Label,
     Select,
-    Textarea,
     type SelectOptionType,
   } from "flowbite-svelte";
   import type { MidiConnectionInterop } from "$lib/types/MidiConnectionInterop";
@@ -23,25 +22,32 @@
     isOpen?: boolean;
     connection?: MidiConnectionInterop;
     onclose?: () => void;
-    onsave: (details: MidiConnectionInterop_Partial) => void;
+    onsave: (details: MidiConnectionInterop_Partial) => void | Promise<void>;
   } = $props();
 
   type MidiConnectionInterop_Partial = Omit<MidiConnectionInterop, "id"> & {
     id?: string;
   };
 
-  let connection: MidiConnectionInterop_Partial = $state(
-    oldConnection ?? {
+  function getInitialConnection(): MidiConnectionInterop_Partial {
+    return oldConnection
+      ? structuredClone(oldConnection)
+      : {
       id: undefined,
       name: "",
       input: "",
       output: "",
-    }
-  );
+        };
+  }
 
-  const handleUpdate = () => {
-    alert("Clicked update.");
-    onsave($state.snapshot(connection!));
+  let connection: MidiConnectionInterop_Partial = $state(getInitialConnection());
+
+  const handleUpdate = async () => {
+    const details = $state.snapshot(connection!);
+    await onsave({
+      ...details,
+      output: details.output || undefined,
+    });
   };
   const handleDelete = () => {
     alert("Clicked delete.");
@@ -76,12 +82,12 @@
 <!-- FIXME: Unmount component on close -->
 <Section sectionClass="h-96">
   <Modal
-    title={connection ? "Edit Connection" : "Create Connection"}
+    title={oldConnection ? "Edit device" : "Create device"}
     bind:open={isOpen}
     autoclose
     {onclose}
   >
-    <form>
+    <form onsubmit={(e) => e.preventDefault()}>
       <div class="mb-4">
         <div>
           <Label for="name" class="mb-2">Name</Label>
@@ -97,7 +103,10 @@
               Input MIDI Port
               <Select
                 class="mt-2"
-                items={generateSelects(portsResult.input, oldConnection?.input)}
+                items={generateSelects(
+                  portsResult.input,
+                  oldConnection?.input ?? undefined,
+                )}
                 bind:value={connection.input}
                 required
               />
@@ -114,8 +123,8 @@
               <Select
                 class="mt-2"
                 items={[
-                  { name: "Disabled", value: null },
-                  ...generateSelects(portsResult.input, oldConnection?.input),
+                  { name: "Disabled", value: "" },
+                  ...generateSelects(portsResult.output, oldConnection?.output),
                 ]}
                 bind:value={connection.output}
                 required

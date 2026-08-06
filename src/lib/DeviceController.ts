@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import type { MidiDevice } from "./MidiDevice";
 import type { MidiConnection } from "./MidiConnection";
-import type { DeviceControllerInterop } from "./types/DeviceControllerInterop";
+import type { DeviceControllerInteropWithConfig } from "./types/DeviceControllerInterop";
 import type { ConsoleConnection } from "./ConsoleConnection";
 
 export class DeviceControllerManager {
@@ -15,6 +15,7 @@ export class DeviceControllerManager {
   }
 
   register<T extends DeviceController>(instance: T): T {
+    this.#controllers[instance.id]?.destroy?.();
     this.#controllers[instance.id] = instance;
     return instance;
   }
@@ -25,12 +26,14 @@ export abstract class DeviceController<
   Config = any
 > {
   id: string;
+  type: string;
   protected device!: D;
   protected console!: ConsoleConnection;
   protected config: Config;
 
   constructor(connection: MidiConnection, config?: Config) {
     this.id = nanoid();
+    this.type = "unknown";
     this.config = config as Config;
     this.initMidiDevice(connection);
     if (!this.device) {
@@ -40,14 +43,17 @@ export abstract class DeviceController<
     }
   }
 
-  toJSON(): DeviceControllerInterop {
+  toJSON(): DeviceControllerInteropWithConfig {
     return {
       id: this.id,
-      type: "TODO: implement type",
+      type: this.type,
       consoleId: this.console?.id,
       midiConnectionId: this.device.connection.id,
+      config: this.config,
     };
   }
+
+  destroy?(): void;
 
   abstract initMidiDevice(connection: MidiConnection): void;
   abstract initConsole(console: ConsoleConnection): void;

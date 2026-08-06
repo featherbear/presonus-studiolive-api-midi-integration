@@ -1,15 +1,28 @@
 <script lang="ts">
   import { client } from "$lib/rpc/client";
 
-  import { Alert, Button, Card, Heading } from "flowbite-svelte";
+  import { Button, Card, Heading } from "flowbite-svelte";
   import Edit from "./components/Edit.svelte";
   import { mount, unmount } from "svelte";
-  import { connect } from "socket.io-client";
+  import type { MidiConnectionInterop } from "$lib/types/MidiConnectionInterop";
 
   let connections = $state(client.midi.getMidiConnections());
+
+  type MidiConnectionDraft = Omit<MidiConnectionInterop, "id"> & {
+    id?: string;
+  };
+
+  function refreshConnections() {
+    connections = client.midi.getMidiConnections();
+  }
+
+  async function saveConnection(details: MidiConnectionDraft) {
+    await client.midi.saveMidiConnection(details);
+    refreshConnections();
+  }
 </script>
 
-<Heading tag="h2" class="text-4xl font-extrabold ">Devices</Heading>
+<Heading tag="h2" class="text-4xl font-extrabold ">MIDI Devices</Heading>
 
 
 {#await connections then connections}
@@ -34,14 +47,15 @@
             props: {
               connection,
               onclose: () => unmount(editDialog),
-              onsave: (details) => {
-                console.log("Details saved:", details);
+              onsave: async (details) => {
+                await saveConnection(details);
+                unmount(editDialog);
               },
             },
           });
         }}
       >
-        Edit connection
+        Edit device
       </Button>
     </Card>
   {/each}
@@ -54,11 +68,12 @@
         target: document.body,
         props: {
           onclose: () => unmount(editDialog),
-          onsave: (details) => {
-            console.log("Details saved:", details);
+          onsave: async (details) => {
+            await saveConnection(details);
+            unmount(editDialog);
           },
         },
       });
-    }}>Add Device</Button
+    }}>Add device</Button
   >
 </div>

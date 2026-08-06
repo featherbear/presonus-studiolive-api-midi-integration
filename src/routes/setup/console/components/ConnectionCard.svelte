@@ -1,16 +1,29 @@
 <script lang="ts">
   import { client } from "$lib/rpc/client";
 
-  import { Alert, Button, Card, Heading } from "flowbite-svelte";
+  import { Button, Card } from "flowbite-svelte";
   import { mount, onMount, unmount } from "svelte";
   import type { ConsoleConnectionInterop } from "$lib/types/ConsoleConnectionInterop";
+  import Edit from "./Edit.svelte";
 
-  let { connection }: { connection: ConsoleConnectionInterop } = $props();
+  type ConsoleConnectionDraft = Omit<ConsoleConnectionInterop, "id"> & {
+    id?: string;
+  };
+
+  let {
+    connection,
+    onsave,
+  }: {
+    connection: ConsoleConnectionInterop;
+    onsave: (details: ConsoleConnectionDraft) => Promise<void> | void;
+  } = $props();
 
   let status = $state();
   onMount(() => {
     async function updateStatus() {
-      status = await client.console.getConsoleConnectionStatus({ id: connection.id }).then(o => o.state);
+      status = await client.console
+        .getConsoleConnectionStatus({ id: connection.id })
+        .then((o) => o.state);
     }
 
     let interval = setInterval(updateStatus, 3000);
@@ -28,25 +41,35 @@
   >
     {connection.name ?? "No name"}
   </h5>
+  {#if connection.serial}
+    <p class="leading-tight font-normal text-gray-700 dark:text-gray-400">
+      Serial: {connection.serial}
+    </p>
+  {/if}
   <p class="leading-tight font-normal text-gray-700 dark:text-gray-400">
-    Address: {connection.address.host}:{connection.address.port}
+    {#if connection.address?.host}
+      Address: {connection.address.host}:{connection.address.port ?? 53000}
+    {:else}
+      Address: Resolved from discovery
+    {/if}
   </p>
   Status: {status}
-  <!-- <Button
-        class="w-fit"
-        onclick={() => {
-          const editDialog = mount(Edit, {
-            target: document.body,
-            props: {
-              connection,
-              onclose: () => unmount(editDialog),
-              onsave: (details) => {
-                console.log("Details saved:", details);
-              },
-            },
-          });
-        }}
-      >
-        Edit connection
-      </Button> -->
+  <Button
+    class="mt-4 w-fit"
+    onclick={() => {
+      const editDialog = mount(Edit, {
+        target: document.body,
+        props: {
+          connection,
+          onclose: () => unmount(editDialog),
+          onsave: async (details) => {
+            await onsave(details);
+            unmount(editDialog);
+          },
+        },
+      });
+    }}
+  >
+    Edit console
+  </Button>
 </Card>
