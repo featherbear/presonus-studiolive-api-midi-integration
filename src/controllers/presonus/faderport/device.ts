@@ -1,13 +1,18 @@
 import { MidiDevice } from "$lib/MidiDevice";
 import type { Faders16Channel } from "./lib/types";
 import * as vendor from "./lib/vendorConstants";
+import _logger from "$lib/logger";
+
+const logger = _logger.child({ module: "FaderPortDevice" });
 
 class FaderPortDevice extends MidiDevice {
   private keepAliveTimer!: NodeJS.Timeout;
 
   init() {
-    console.log("init FaderPortDevice");
+    logger.debug("Initializing FaderPort device");
+
     this.keepAliveTimer = setInterval(() => {
+      logger.trace("Sending FaderPort keep alive");
       this.connection.sendRaw(vendor.SysEx_KeepAlive);
     }, 1000);
   }
@@ -59,6 +64,9 @@ class FaderPortDevice extends MidiDevice {
     text: string,
     flags?: vendor.SCRIBBLE_STRIP_STRING_FORMAT
   ) {
+    if (!text) {
+      text = "";
+    }
     this.connection.sendRaw(
       Buffer.concat([
         vendor.SysExHdr,

@@ -26,6 +26,9 @@ import type { Faders16Channel } from "./lib/types";
 import { MAX_14 } from "./lib/valueGenerator";
 import type { MidiConnection } from "$lib/MidiConnection";
 import type { FaderPortConfig } from "./config";
+import _logger from "$lib/logger";
+
+const logger = _logger.child({ module: "FaderPortController" });
 
 const layout = {
   FADER_ROW: [
@@ -105,6 +108,10 @@ class FaderPortController extends DeviceController<
   #currentPage: number;
 
   #consoleListeners: EventRegistrationPersistence;
+  #midiListeners: {
+    event: "noteon" | "pitch" | "cc";
+    callback: (...args: any[]) => void;
+  }[];
 
   /**
    * State map to ignore the button noteoff events (technically they are noteon with velocity 0)
@@ -113,10 +120,12 @@ class FaderPortController extends DeviceController<
 
   constructor(device: MidiConnection, config: FaderPortConfig) {
     super(device, config);
+    this.type = "faderport";
 
     this.#selectedChannel = undefined;
     this.#currentPage = 0;
     this.#consoleListeners = {};
+    this.#midiListeners = [];
     this.#cancelFeedbackMap = {};
 
     this.init();
@@ -139,12 +148,21 @@ class FaderPortController extends DeviceController<
         registration.callback as any
       );
     }
+
+    for (const registration of this.#midiListeners) {
+      this.device.connection.off(registration.event, registration.callback);
+    }
+
+    this.#midiListeners = [];
+    this.device.destroy();
   }
 
   initConsole(consoleConnection: ConsoleConnection) {
     if (this.console) {
       throw new Error("Console connection already established");
     }
+
+    this.console = consoleConnection;
 
     consoleConnection.withSession((client) => {
       client.on("level", (evt) => this.notifyFader(evt.channel, evt.level));
@@ -192,7 +210,9 @@ class FaderPortController extends DeviceController<
       });
     }, this.#consoleListeners);
 
-    this.console = consoleConnection;
+    if (consoleConnection.state === "connected") {
+      this.refreshVisibleChannels();
+    }
   }
 
   private notifyMute(channel: ChannelSelector, state: boolean) {
@@ -251,7 +271,7 @@ class FaderPortController extends DeviceController<
 
   private refreshVisibleChannels() {
     if (!this.console) {
-      console.warn("Console connection not established");
+      logger.warn({ controllerId: this.id }, "Console connection not established");
       return;
     }
 
@@ -332,11 +352,12 @@ class FaderPortController extends DeviceController<
           visibleChannel.override?.name
         );
       } else {
-        let path = `${parseChannelString(visibleChannel.channel)}/username`;
+        let pathPrefix = parseChannelString(visibleChannel.channel);
+
         this.device.setScribbleStrip(
           (i + 1) as Faders16Channel,
           2,
-          this.console.client.state.get(path)
+          this.console.client.state.get(pathPrefix+"/username") || this.console.client.state.get(pathPrefix+"/name")
         );
       }
 
@@ -350,7 +371,10 @@ class FaderPortController extends DeviceController<
 
   private selectChannel(channel: ChannelSelector) {
     this.#selectedChannel = channel;
-    console.log("Selected channel", this.#selectedChannel);
+    logger.info(
+      { controllerId: this.id, channel: this.#selectedChannel },
+      "Selected channel"
+    );
     this.refreshVisibleChannels();
   }
 
@@ -361,8 +385,8 @@ class FaderPortController extends DeviceController<
 
   init() {
     // TODO: we should probably call init automatically
-    console.log("init called");
-    this.device.connection.on("noteon", (note) => {
+    logger.debug({ controllerId: this.id }, "Initializing FaderPort controller");
+    const onNote = (note: any) => {
       setImmediate(() => {
         const feedback = () => this.device.connection.send("noteon", note);
 
@@ -435,26 +459,20 @@ class FaderPortController extends DeviceController<
           switch (note.note as BUTTON) {
             case BUTTON.SOLO_CLEAR: {
               // this.API.setSolo()
-              console.log("TODO: SOLO CLEAR");
+              logger.debug({ controllerId: this.id }, "TODO: SOLO CLEAR");
 
               // feedback()
               return;
             }
 
             case BUTTON.PAN: {
-              //   console.log("pan press");
               //   this.setEditMode(this._editMode === "pan" ? null : "pan");
               // feedback()
               return;
             }
 
             case BUTTON.PAN_PARAM: {
-              //   if (this._editMode === "pan" && !!this.selectedChannel) {
-              //     console.log(
-              //       "TODO: Set pan of selected channel to centre",
-              //       this.selectedChannel
-              //     );
-              //   }
+              // TODO: Set pan of selected channel to centre.
               // feedback()
               return;
             }
@@ -476,7 +494,6 @@ class FaderPortController extends DeviceController<
               //     this.API.setMute(channel, !playStat);
               //   }
               //   playStat = !playStat;
-              //   console.log("play");
               // feedback()
               return;
             }
@@ -515,9 +532,9 @@ class FaderPortController extends DeviceController<
           feedback();
         }
       });
-    });
+    };
 
-    this.device.connection.on("pitch", (pitch) => {
+    const onPitch = (pitch: any) => {
       setImmediate(() => {
         let idx = pitch.channel;
         if (!this.visibleChannels[idx]) return;
@@ -529,9 +546,9 @@ class FaderPortController extends DeviceController<
         );
         return;
       });
-    });
+    };
 
-    this.device.connection.on("cc", (change) => {
+    const onCc = (change: any) => {
       setImmediate(() => {
         let delta = change.value;
         if (delta > 64) delta = -delta + 64;
@@ -539,31 +556,41 @@ class FaderPortController extends DeviceController<
         if (change.channel == 0) {
           switch (change.controller as ENCODER) {
             case ENCODER.PAN_PARAM: {
-              console.log(change);
-
               let value = Math.ceil(Math.abs(delta) / 2);
-              console.log("Param", delta);
+              logger.debug(
+                { controllerId: this.id, change, delta, value },
+                "PAN_PARAM encoder changed"
+              );
 
-              // if (this._editMode === "pan" && !!this.selectedChannel) {
-              //   console.log(
-              //     "TODO: Adjust pan of selected channel",
-              //     this.selectedChannel,
-              //     Math.sign(delta) * value
-              //   );
-              // }
+              // TODO: Adjust pan of selected channel.
               return;
             }
 
             case ENCODER.SESSION_NAVIGATOR: {
-              console.log("SESS", delta);
+              logger.debug(
+                { controllerId: this.id, change, delta },
+                "SESSION_NAVIGATOR encoder changed"
+              );
               return;
             }
           }
         }
-        console.log({ ...change, value: delta });
+        logger.debug(
+          { controllerId: this.id, change: { ...change, value: delta } },
+          "Unhandled control change"
+        );
         return;
       });
-    });
+    };
+
+    this.device.connection.on("noteon", onNote);
+    this.device.connection.on("pitch", onPitch);
+    this.device.connection.on("cc", onCc);
+    this.#midiListeners.push(
+      { event: "noteon", callback: onNote },
+      { event: "pitch", callback: onPitch },
+      { event: "cc", callback: onCc }
+    );
   }
 }
 

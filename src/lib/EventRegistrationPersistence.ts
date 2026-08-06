@@ -9,6 +9,9 @@ export type EventRegistrationPersistence = Record<
 >;
 
 import { isProxy } from "node:util/types";
+import _logger from "$lib/logger";
+
+const logger = _logger.child({ module: "EventRegistrationPersistence" });
 
 /**
  * Do not restore registrations on a proxied object
@@ -56,7 +59,7 @@ export function proxyEventRegistrationInterface<
     }
   }
 
-  console.log('obj is', obj);
+  logger.debug({ obj }, "Creating event registration proxy");
   const proxy = new Proxy(obj, {
     get: (target, prop, receiver) => {
       // if (prop === "on") {
