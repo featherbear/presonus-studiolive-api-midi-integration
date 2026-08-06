@@ -33,11 +33,13 @@
     connection: oldConnection,
     onclose,
     onsave,
+    ondelete,
   }: {
     isOpen?: boolean;
     connection?: ConsoleConnectionInterop;
     onclose?: () => void;
     onsave: (details: ConsoleConnectionInterop_Partial) => Promise<void> | void;
+    ondelete?: (id: string) => Promise<void> | void;
   } = $props();
 
   type ConsoleConnectionInterop_Partial = Omit<
@@ -81,6 +83,8 @@
   );
   let connectionMode: ConnectionMode = $state(getInitialConnectionMode());
   let discoveredDropdownOpen = $state(false);
+  let confirmDeleteOpen = $state(false);
+  let deleteError = $state("");
 
   const handleUpdate = async () => {
     const snapshot = $state.snapshot(connection!);
@@ -100,8 +104,16 @@
 
     await onsave(payload);
   };
-  const handleDelete = () => {
-    alert("Clicked delete.");
+  const handleDelete = async () => {
+    if (!oldConnection?.id || !ondelete) return;
+
+    deleteError = "";
+    try {
+      await ondelete(oldConnection.id);
+      confirmDeleteOpen = false;
+    } catch (error) {
+      deleteError = error instanceof Error ? error.message : "Failed to delete console.";
+    }
   };
 </script>
 
@@ -112,15 +124,15 @@
     bind:open={isOpen}
     {onclose}
   >
-    <form onsubmit={(e) => e.preventDefault()}>
-      <div class="mb-4">
+    <form class="space-y-5" onsubmit={(e) => e.preventDefault()}>
+      <div>
         <div>
           <Label for="name" class="mb-2">Name</Label>
           <Input type="text" id="name" bind:value={connection.name} required />
         </div>
       </div>
 
-      <div class="mb-4">
+      <div>
         <Label class="mb-2">Connection method</Label>
         <div class="flex flex-wrap gap-2">
           <Button
@@ -141,7 +153,7 @@
       </div>
 
       {#if connectionMode === "serial"}
-        <div class="mb-4">
+        <div>
           <Label>
             Serial
             <Input
@@ -157,7 +169,7 @@
           </p>
         </div>
       {:else}
-        <div class="mb-4 grid gap-4 sm:grid-cols-2">
+        <div class="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>
               Address
@@ -184,7 +196,7 @@
         </div>
       {/if}
 
-      <div class="mb-4 grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
           {#if discovered.length > 0}
             <Button onclick={(e: MouseEvent) => e.stopPropagation()}>
@@ -215,19 +227,40 @@
           {/if}
         </div>
 
-        <div class="flex items-center space-x-4">
-          <Button type="submit" class="w-64" onclick={handleUpdate}
+        <div class="flex flex-wrap items-center gap-3 sm:justify-between">
+          {#if oldConnection?.id && ondelete}
+            <Button
+              type="button"
+              class="w-full sm:w-auto"
+              outline
+              color="red"
+              onclick={() => (confirmDeleteOpen = true)}>Delete</Button
+            >
+          {:else}
+            <span></span>
+          {/if}
+          <Button type="submit" class="w-full sm:w-auto" onclick={handleUpdate}
             >Save connection</Button
-          >
-          <Button
-            type="submit"
-            class="w-52"
-            outline
-            color="red"
-            onclick={handleDelete}>Delete</Button
           >
         </div>
       </div>
     </form>
+  </Modal>
+
+  <Modal title="Delete console?" bind:open={confirmDeleteOpen} size="xs">
+    <div class="space-y-4">
+      <p class="text-gray-700 dark:text-gray-300">
+        Delete {oldConnection?.name || "this console"}? This removes it from saved settings and closes the live connection.
+      </p>
+      {#if deleteError}
+        <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+          {deleteError}
+        </p>
+      {/if}
+      <div class="flex justify-end gap-3">
+        <Button type="button" color="alternative" onclick={() => (confirmDeleteOpen = false)}>Cancel</Button>
+        <Button type="button" color="red" onclick={handleDelete}>Delete console</Button>
+      </div>
+    </div>
   </Modal>
 </Section>

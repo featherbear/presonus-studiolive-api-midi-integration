@@ -92,11 +92,23 @@ export function saveConsoleConnectionSettings(
   return connection;
 }
 
+export function deleteConsoleConnectionSettings(id: string) {
+  const settings = readSettings();
+  delete settings.consoles[id];
+  writeSettings(settings);
+}
+
 export function saveMidiConnectionSettings(connection: MidiConnectionInterop) {
   const settings = readSettings();
   settings.midi.connections[connection.id] = connection;
   writeSettings(settings);
   return connection;
+}
+
+export function deleteMidiConnectionSettings(id: string) {
+  const settings = readSettings();
+  delete settings.midi.connections[id];
+  writeSettings(settings);
 }
 
 export function saveDeviceControllerSettings(
@@ -106,4 +118,10 @@ export function saveDeviceControllerSettings(
   settings.midi.controllers[controller.id] = controller;
   writeSettings(settings);
   return controller;
+}
+
+export function deleteDeviceControllerSettings(id: string) {
+  const settings = readSettings();
+  delete settings.midi.controllers[id];
+  writeSettings(settings);
 }

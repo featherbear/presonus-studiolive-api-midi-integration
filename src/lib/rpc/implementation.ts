@@ -2,6 +2,10 @@ import { EventPublisher, implement } from "@orpc/server";
 import { nanoid } from "nanoid";
 import { contract } from "./contract";
 import {
+  deleteConsoleConnectionSettings,
+  deleteDeviceControllerSettings,
+  deleteMidiConnectionSettings,
+  readSettings,
   saveConsoleConnectionSettings,
   saveDeviceControllerSettings,
   saveMidiConnectionSettings,
@@ -49,6 +53,22 @@ export const router = os.router({
 
       saveMidiConnectionSettings(connection);
       return midiConnectionManager.addFromConfig(connection).toJSON();
+    }),
+
+    deleteMidiConnection: os.midi.deleteMidiConnection.handler(({ input }) => {
+      const settings = readSettings();
+      const dependentController = Object.values(settings.midi.controllers).find(
+        (controller) => controller.midiConnectionId === input.id,
+      );
+      if (dependentController) {
+        throw new Error(
+          `MIDI device is used by controller ${dependentController.id}`,
+        );
+      }
+
+      deleteMidiConnectionSettings(input.id);
+      midiConnectionManager.delete(input.id);
+      return { success: true };
     }),
 
     listenMidiConnection: os.midi.listenMidiConnection.handler(
@@ -115,6 +135,14 @@ export const router = os.router({
         return instance;
       },
     ),
+
+    deleteDeviceController: os.controller.deleteDeviceController.handler(
+      ({ input }) => {
+        deleteDeviceControllerSettings(input.id);
+        deviceControllerManager.delete(input.id);
+        return { success: true };
+      },
+    ),
   },
   console: {
     discover: os.console.discover.handler(async () => {
@@ -150,6 +178,24 @@ export const router = os.router({
 
         saveConsoleConnectionSettings(connection);
         return consoleConnectionManager.addFromConfig(connection).toJSON();
+      },
+    ),
+
+    deleteConsoleConnection: os.console.deleteConsoleConnection.handler(
+      ({ input }) => {
+        const settings = readSettings();
+        const dependentController = Object.values(settings.midi.controllers).find(
+          (controller) => controller.consoleId === input.id,
+        );
+        if (dependentController) {
+          throw new Error(
+            `Console connection is used by controller ${dependentController.id}`,
+          );
+        }
+
+        deleteConsoleConnectionSettings(input.id);
+        consoleConnectionManager.delete(input.id);
+        return { success: true };
       },
     ),
 

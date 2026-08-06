@@ -18,11 +18,13 @@
     connection: oldConnection,
     onclose,
     onsave,
+    ondelete,
   }: {
     isOpen?: boolean;
     connection?: MidiConnectionInterop;
     onclose?: () => void;
     onsave: (details: MidiConnectionInterop_Partial) => void | Promise<void>;
+    ondelete?: (id: string) => void | Promise<void>;
   } = $props();
 
   type MidiConnectionInterop_Partial = Omit<MidiConnectionInterop, "id"> & {
@@ -41,6 +43,8 @@
   }
 
   let connection: MidiConnectionInterop_Partial = $state(getInitialConnection());
+  let confirmDeleteOpen = $state(false);
+  let deleteError = $state("");
 
   const handleUpdate = async () => {
     const details = $state.snapshot(connection!);
@@ -49,8 +53,16 @@
       output: details.output || undefined,
     });
   };
-  const handleDelete = () => {
-    alert("Clicked delete.");
+  const handleDelete = async () => {
+    if (!oldConnection?.id || !ondelete) return;
+
+    deleteError = "";
+    try {
+      await ondelete(oldConnection.id);
+      confirmDeleteOpen = false;
+    } catch (error) {
+      deleteError = error instanceof Error ? error.message : "Failed to delete MIDI device.";
+    }
   };
 
   const generateSelects = (values: string[], current?: string) => {
@@ -84,17 +96,16 @@
   <Modal
     title={oldConnection ? "Edit device" : "Create device"}
     bind:open={isOpen}
-    autoclose
     {onclose}
   >
-    <form onsubmit={(e) => e.preventDefault()}>
-      <div class="mb-4">
+    <form class="space-y-5" onsubmit={(e) => e.preventDefault()}>
+      <div>
         <div>
           <Label for="name" class="mb-2">Name</Label>
           <Input type="text" id="name" bind:value={connection.name} required />
         </div>
       </div>
-      <div class="mb-4 grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
           {#await ports}
             Loading
@@ -133,19 +144,40 @@
           {/await}
         </div>
 
-        <div class="flex items-center space-x-4">
-          <Button type="submit" class="w-64" onclick={handleUpdate}
+        <div class="flex flex-wrap items-center gap-3 sm:col-span-2 sm:justify-between">
+          {#if oldConnection?.id && ondelete}
+            <Button
+              type="button"
+              class="w-full sm:w-auto"
+              outline
+              color="red"
+              onclick={() => (confirmDeleteOpen = true)}>Delete</Button
+            >
+          {:else}
+            <span></span>
+          {/if}
+          <Button type="submit" class="w-full sm:w-auto" onclick={handleUpdate}
             >Save connection</Button
-          >
-          <Button
-            type="submit"
-            class="w-52"
-            outline
-            color="red"
-            onclick={handleDelete}>Delete</Button
           >
         </div>
       </div>
     </form>
+  </Modal>
+
+  <Modal title="Delete MIDI device?" bind:open={confirmDeleteOpen} size="xs">
+    <div class="space-y-4">
+      <p class="text-gray-700 dark:text-gray-300">
+        Delete {oldConnection?.name || "this MIDI device"}? This removes it from saved settings and closes the live MIDI ports.
+      </p>
+      {#if deleteError}
+        <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+          {deleteError}
+        </p>
+      {/if}
+      <div class="flex justify-end gap-3">
+        <Button type="button" color="alternative" onclick={() => (confirmDeleteOpen = false)}>Cancel</Button>
+        <Button type="button" color="red" onclick={handleDelete}>Delete device</Button>
+      </div>
+    </div>
   </Modal>
 </Section>

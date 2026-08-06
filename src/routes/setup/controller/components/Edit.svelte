@@ -75,11 +75,13 @@
     controller: oldController,
     onclose,
     onsave,
+    ondelete,
   }: {
     isOpen?: boolean;
     controller?: DeviceControllerInteropWithConfig;
     onclose?: () => void;
     onsave: (details: DeviceControllerDraft) => void | Promise<void>;
+    ondelete?: (id: string) => void | Promise<void>;
   } = $props();
 
   function createDefaultConfig(model: 8 | 16): FaderPortConfig {
@@ -108,6 +110,8 @@
   let model = $state(String(getConfig().model));
   let pagesLoop = $state(getConfig().options?.pagesLoop ?? true);
   let activePageIndex = $state(0);
+  let confirmDeleteOpen = $state(false);
+  let deleteError = $state("");
 
   function optionsFromConnections(
     connections: { id: string; name?: string }[],
@@ -293,8 +297,16 @@
     await onsave($state.snapshot(controller));
   };
 
-  const handleDelete = () => {
-    alert("Delete is not implemented yet.");
+  const handleDelete = async () => {
+    if (!oldController?.id || !ondelete) return;
+
+    deleteError = "";
+    try {
+      await ondelete(oldController.id);
+      confirmDeleteOpen = false;
+    } catch (error) {
+      deleteError = error instanceof Error ? error.message : "Failed to delete controller.";
+    }
   };
 </script>
 
@@ -582,18 +594,39 @@
         </div>
       </div>
 
-      <div class="flex shrink-0 items-center space-x-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-        <Button type="submit" class="w-64" onclick={handleUpdate}
+      <div class="flex shrink-0 flex-wrap items-center gap-3 border-t border-gray-200 pt-4 dark:border-gray-700 sm:justify-between">
+        {#if oldController?.id && ondelete}
+          <Button
+            type="button"
+            class="w-full sm:w-auto"
+            outline
+            color="red"
+            onclick={() => (confirmDeleteOpen = true)}>Delete</Button
+          >
+        {:else}
+          <span></span>
+        {/if}
+        <Button type="submit" class="w-full sm:w-auto" onclick={handleUpdate}
           >Save controller</Button
-        >
-        <Button
-          type="submit"
-          class="w-52"
-          outline
-          color="red"
-          onclick={handleDelete}>Delete</Button
         >
       </div>
     </form>
+  </Modal>
+
+  <Modal title="Delete controller?" bind:open={confirmDeleteOpen} size="xs">
+    <div class="space-y-4">
+      <p class="text-gray-700 dark:text-gray-300">
+        Delete {oldController?.type || "this controller"}? This removes it from saved settings and disconnects its live handlers.
+      </p>
+      {#if deleteError}
+        <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+          {deleteError}
+        </p>
+      {/if}
+      <div class="flex justify-end gap-3">
+        <Button type="button" color="alternative" onclick={() => (confirmDeleteOpen = false)}>Cancel</Button>
+        <Button type="button" color="red" onclick={handleDelete}>Delete controller</Button>
+      </div>
+    </div>
   </Modal>
 </Section>

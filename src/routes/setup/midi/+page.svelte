@@ -20,60 +20,79 @@
     await client.midi.saveMidiConnection(details);
     refreshConnections();
   }
+
+  async function deleteConnection(id: string) {
+    await client.midi.deleteMidiConnection({ id });
+    refreshConnections();
+  }
 </script>
 
-<Heading tag="h2" class="text-4xl font-extrabold ">MIDI Devices</Heading>
-
-
-{#await connections then connections}
-  {#each connections as connection (connection.id)}
-    <Card class="p-4 sm:p-6 md:p-8">
-      <h5
-        class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
-      >
-        {connection.name ?? "No name"}
-      </h5>
-      <p class="leading-tight font-normal text-gray-700 dark:text-gray-400">
-        Input: {connection.input}
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="space-y-2">
+      <Heading tag="h2" class="text-4xl font-extrabold">MIDI Devices</Heading>
+      <p class="text-gray-600 dark:text-gray-400">
+        Configure the MIDI input and output ports used by your control surfaces.
       </p>
-      <p class="leading-tight font-normal text-gray-700 dark:text-gray-400">
-        Output: {connection.output ?? "(no port)"}
-      </p>
-      <Button
-        class="w-fit"
-        onclick={() => {
-          const editDialog = mount(Edit, {
-            target: document.body,
-            props: {
-              connection,
-              onclose: () => unmount(editDialog),
-              onsave: async (details) => {
-                await saveConnection(details);
-                unmount(editDialog);
-              },
+    </div>
+
+    <Button
+      class="w-fit"
+      onclick={() => {
+        const editDialog = mount(Edit, {
+          target: document.body,
+          props: {
+            onclose: () => unmount(editDialog),
+            onsave: async (details) => {
+              await saveConnection(details);
+              unmount(editDialog);
             },
-          });
-        }}
-      >
-        Edit device
-      </Button>
-    </Card>
-  {/each}
-{/await}
-
-<div class="mt-8 flex justify-center">
-  <Button
-    onclick={() => {
-      const editDialog = mount(Edit, {
-        target: document.body,
-        props: {
-          onclose: () => unmount(editDialog),
-          onsave: async (details) => {
-            await saveConnection(details);
-            unmount(editDialog);
           },
-        },
-      });
-    }}>Add device</Button
-  >
-</div>
+        });
+      }}>Add device</Button
+    >
+  </div>
+
+  {#await connections then connections}
+    <div class="grid gap-4">
+      {#each connections as connection (connection.id)}
+        <Card class="w-full max-w-none p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="space-y-3">
+              <h5 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                {connection.name ?? "No name"}
+              </h5>
+              <div class="space-y-1 text-gray-700 dark:text-gray-400">
+                <p>Input: {connection.input}</p>
+                <p>Output: {connection.output ?? "(no port)"}</p>
+              </div>
+            </div>
+
+            <Button
+              class="w-fit"
+              onclick={() => {
+                const editDialog = mount(Edit, {
+                  target: document.body,
+                  props: {
+                    connection,
+                    onclose: () => unmount(editDialog),
+                    onsave: async (details) => {
+                      await saveConnection(details);
+                      unmount(editDialog);
+                    },
+                    ondelete: async (id) => {
+                      await deleteConnection(id);
+                      unmount(editDialog);
+                    },
+                  },
+                });
+              }}
+            >
+              Edit device
+            </Button>
+          </div>
+        </Card>
+      {/each}
+    </div>
+  {/await}
+</section>

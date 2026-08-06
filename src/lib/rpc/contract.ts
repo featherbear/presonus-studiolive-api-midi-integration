@@ -52,6 +52,18 @@ export const contract = {
       )
       .output(MidiConnectionInterop),
 
+    deleteMidiConnection: oc
+      .route({
+        method: "DELETE",
+        path: "/connection/{id}",
+      })
+      .input(
+        z.object({
+          id: z.string().describe("Connection"),
+        })
+      )
+      .output(z.object({ success: z.boolean() })),
+
     listenMidiConnection: oc
       .route({
         method: "GET",
@@ -101,6 +113,18 @@ export const contract = {
         })
       )
       .output(DeviceControllerInteropWithConfig),
+
+    deleteDeviceController: oc
+      .route({
+        method: "DELETE",
+        path: "/controller/{id}",
+      })
+      .input(
+        z.object({
+          id: z.string().describe("Controller"),
+        })
+      )
+      .output(z.object({ success: z.boolean() })),
   }),
   console: oc.prefix("/console").router({
     discover: oc
@@ -148,6 +172,18 @@ export const contract = {
         })
       )
       .output(ConsoleConnectionInterop),
+
+    deleteConsoleConnection: oc
+      .route({
+        method: "DELETE",
+        path: "/connection/{id}",
+      })
+      .input(
+        z.object({
+          id: z.string().describe("Connection"),
+        })
+      )
+      .output(z.object({ success: z.boolean() })),
 
     getConsoleConnectionStatus: oc
       .route({

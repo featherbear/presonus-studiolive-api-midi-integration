@@ -19,6 +19,15 @@ export class DeviceControllerManager {
     this.#controllers[instance.id] = instance;
     return instance;
   }
+
+  delete(id: string) {
+    const controller = this.#controllers[id];
+    if (!controller) return false;
+
+    controller.destroy?.();
+    delete this.#controllers[id];
+    return true;
+  }
 }
 
 export abstract class DeviceController<

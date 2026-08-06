@@ -20,59 +20,79 @@
     await client.controller.saveDeviceController(details);
     refreshControllers();
   }
+
+  async function deleteController(id: string) {
+    await client.controller.deleteDeviceController({ id });
+    refreshControllers();
+  }
 </script>
 
-<Heading tag="h2" class="text-4xl font-extrabold ">Controllers</Heading>
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="space-y-2">
+      <Heading tag="h2" class="text-4xl font-extrabold">Controllers</Heading>
+      <p class="text-gray-600 dark:text-gray-400">
+        Assign MIDI devices to consoles and configure the channel pages shown on each controller.
+      </p>
+    </div>
 
-{#await controllers then controllers}
-  {#each controllers as controller (controller.id)}
-    <Card class="p-4 sm:p-6 md:p-8">
-      <h5
-        class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
-      >
-        {controller.type}
-      </h5>
-      <p class="leading-tight font-normal text-gray-700 dark:text-gray-400">
-        MIDI connection: {controller.midiConnectionId}
-      </p>
-      <p class="leading-tight font-normal text-gray-700 dark:text-gray-400">
-        Console connection: {controller.consoleId}
-      </p>
-      <Button
-        class="w-fit"
-        onclick={() => {
-          const editDialog = mount(Edit, {
-            target: document.body,
-            props: {
-              controller,
-              onclose: () => unmount(editDialog),
-              onsave: async (details) => {
-                await saveController(details);
-                unmount(editDialog);
-              },
+    <Button
+      class="w-fit"
+      onclick={() => {
+        const editDialog = mount(Edit, {
+          target: document.body,
+          props: {
+            onclose: () => unmount(editDialog),
+            onsave: async (details) => {
+              await saveController(details);
+              unmount(editDialog);
             },
-          });
-        }}
-      >
-        Edit controller
-      </Button>
-    </Card>
-  {/each}
-{/await}
-
-<div class="mt-8 flex justify-center">
-  <Button
-    onclick={() => {
-      const editDialog = mount(Edit, {
-        target: document.body,
-        props: {
-          onclose: () => unmount(editDialog),
-          onsave: async (details) => {
-            await saveController(details);
-            unmount(editDialog);
           },
-        },
-      });
-    }}>Add Controller</Button
-  >
-</div>
+        });
+      }}>Add controller</Button
+    >
+  </div>
+
+  {#await controllers then controllers}
+    <div class="grid gap-4">
+      {#each controllers as controller (controller.id)}
+        <Card class="w-full max-w-none p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="space-y-3">
+              <h5 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                {controller.type}
+              </h5>
+              <div class="space-y-1 text-gray-700 dark:text-gray-400">
+                <p>MIDI device: {controller.midiConnectionId}</p>
+                <p>Console connection: {controller.consoleId}</p>
+              </div>
+            </div>
+
+            <Button
+              class="w-fit"
+              onclick={() => {
+                const editDialog = mount(Edit, {
+                  target: document.body,
+                  props: {
+                    controller,
+                    onclose: () => unmount(editDialog),
+                    onsave: async (details) => {
+                      await saveController(details);
+                      unmount(editDialog);
+                    },
+                    ondelete: async (id) => {
+                      await deleteController(id);
+                      unmount(editDialog);
+                    },
+                  },
+                });
+              }}
+            >
+              Edit controller
+            </Button>
+          </div>
+        </Card>
+      {/each}
+    </div>
+  {/await}
+</section>

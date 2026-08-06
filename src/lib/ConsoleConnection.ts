@@ -75,6 +75,15 @@ export class ConsoleConnectionManager {
     return this.#connections[id];
   }
 
+  delete(id: string) {
+    const connection = this.#connections[id];
+    if (!connection) return false;
+
+    connection.close();
+    delete this.#connections[id];
+    return true;
+  }
+
   private register(instance: ConsoleConnection) {
     this.#connections[instance.id] = instance;
     return instance;
