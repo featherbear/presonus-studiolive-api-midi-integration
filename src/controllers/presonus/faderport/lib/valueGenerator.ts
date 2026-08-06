@@ -1,0 +1,109 @@
+import type { Faders16Channel } from "./types";
+import { BUTTON_STATE, LED, LED_RGB, SCRIBBLE_STRIP_MODE, SCRIBBLE_STRIP_REDRAW_MODE, SCRIBBLE_STRIP_STRING_FORMAT, SysExHdr, VALUE_BAR_MODE } from "./vendorConstants";
+
+export const MAX_14 = 0x3FFF
+
+const value14Split = (value14: number) => {
+    value14 &= MAX_14
+    let lsb = value14 & 0x7F
+    let msb = value14 >> 7
+
+    return [lsb, msb]
+}
+
+type MidiType = "pitch" | "noteon" | "raw" | "sysex" | "channel aftertouch";
+type OutputGenerator = (...args: any[]) => Buffer | Buffer[]
+export type WrappedFunction<T extends OutputGenerator> = ((...args: Parameters<T>) => Buffer[]) & { type: MidiType }
+
+// Returns the output of an output generator as a buffer array with a $.type value
+const wrapType = <T extends OutputGenerator>(fn: T, midiType: MidiType): WrappedFunction<T> => {
+        let wrapped = ((...args: Parameters<T>) => {
+            let result: Buffer | Buffer[] = fn(...args)
+            return Buffer.isBuffer(result) ? [result] : result
+        }) as WrappedFunction<T>
+        wrapped.type = midiType;
+        return wrapped
+    }
+
+export const setFaderPosition = wrapType(function (fader: Faders16Channel, value14: number) {
+    return Buffer.from([0xE0 + fader - 1, ...value14Split(value14)])
+}, 'pitch')
+
+export const setLEDState = wrapType(function (led: LED, state: BUTTON_STATE) {
+    return Buffer.from([0x90, led, state])
+}, 'noteon')
+
+export const setLEDColour = wrapType(function (button: LED_RGB, rgb: [r7: number, g7: number, b7: number]) {
+    return [
+        Buffer.from([0x91, button, (rgb[0] ?? 0) & 0x7F]),
+        Buffer.from([0x92, button, (rgb[1] ?? 0) & 0x7F]),
+        Buffer.from([0x93, button, (rgb[2] ?? 0) & 0x7F])
+    ]
+}, 'noteon')
+
+function _calculateValueBarSelector(fader: Faders16Channel) {
+    if (1 <= fader && fader <= 8) {
+        return 0x30 + fader - 1
+    } else {
+        return 0x40 + fader - 1 - 8
+    }
+}
+
+export const setValueBar = wrapType(function (fader: Faders16Channel, value7: number) {
+    return Buffer.from([0xB0, _calculateValueBarSelector(fader), value7 & 0x7F])
+}, 'raw')
+
+export const setValueBarMode = wrapType(function (fader: Faders16Channel, mode: VALUE_BAR_MODE) {
+    return Buffer.from([0xB0, _calculateValueBarSelector(fader) + 8, mode])
+}, 'raw')
+
+export const setScribbleStrip = wrapType(function (strip: Faders16Channel, line: 1 | 2 | 3 | 4, text: string, flags?: SCRIBBLE_STRIP_STRING_FORMAT) {
+    return Buffer.concat([
+        SysExHdr,
+        Buffer.from([0x12, strip - 1, line - 1, flags ?? 0]),
+        Buffer.from(text),
+        Buffer.from([0xF7])
+    ])
+}, 'sysex')
+
+export const setScribbleStripMode = wrapType(function (strip: Faders16Channel, mode: SCRIBBLE_STRIP_MODE, keepExisting?: boolean) {
+    return Buffer.concat([
+        SysExHdr,
+        Buffer.from([
+            0x13,
+            strip - 1,
+            mode | ((keepExisting ? SCRIBBLE_STRIP_REDRAW_MODE.KEEP : SCRIBBLE_STRIP_REDRAW_MODE.DISCARD) << 4),
+            0xF7
+        ])
+    ])
+}, 'sysex')
+
+function _calculateMeterSelector(fader: Faders16Channel) {
+    if (1 <= fader && fader <= 8) {
+        return 0xD0 + fader - 1
+    } else {
+        return 0xC0 + fader - 1 - 8
+    }
+}
+
+/**
+ * Auto-decay after 1.8 seconds
+ */
+export const setPeakMeter = wrapType(function (strip: Faders16Channel, value7: number) {
+    return Buffer.from([
+        _calculateMeterSelector(strip),
+        value7 & 0x7F
+    ])
+}, 'channel aftertouch')
+
+/**
+ * Does not automatically decay
+ */
+export const setReductionMeter = wrapType(function (strip: Faders16Channel, value7: number) {
+    return Buffer.from([
+        _calculateMeterSelector(strip) + 8,
+        value7 & 0x7F
+    ])
+}, 'channel aftertouch')
+
+
