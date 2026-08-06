@@ -1,3 +1,9 @@
 allowBuilds:
   '@swc/core': false
   presonus-studiolive-api: true
+
+onlyBuiltDependencies:
+  - '@julusian/midi'
+  - '@parcel/watcher'
+  - dtrace-provider
+  - esbuild
