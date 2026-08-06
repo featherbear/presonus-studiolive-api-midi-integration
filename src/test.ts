@@ -1,24 +1,23 @@
 import { ConsoleConnectionManager } from "$lib/ConsoleConnection";
-import MidiConnectionManager from "$lib/MidiConnection";
-import { MidiDevice } from "$lib/MidiDevice";
+import { MidiConnectionManager } from "$lib/MidiConnection";
 import FaderPortController from "./controllers/presonus/faderport/controller";
-import FaderPortDevice from "./controllers/presonus/faderport/device";
 import _logger from "$lib/logger";
 
 const logger = _logger.child({ module: "test" });
 
 const manager = new ConsoleConnectionManager();
+const midiManager = new MidiConnectionManager();
 
 let sl = manager.create({
   host: "192.168.0.202",
 });
 
 logger.info(
-  { connection: MidiConnectionManager.createVirtual("A") },
+  { connection: midiManager.createVirtual("A").toJSON() },
   "Created virtual MIDI connection"
 );
 logger.info({ ports: MidiConnectionManager.discover() }, "Discovered MIDI ports");
-let midiConnection = MidiConnectionManager.create(
+let midiConnection = midiManager.create(
   "PreSonus FP8 Port 1",
   "PreSonus FP8 Port 1"
 );
@@ -49,4 +48,4 @@ let fc = new FaderPortController(midiConnection, {
   ],
 });
 
-fc.connectConsole(sl);
+fc.initConsole(sl);

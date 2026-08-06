@@ -1,4 +1,3 @@
-import type { MidiTypes } from "../../../../../types/easymidiInterop";
 import type { Faders16Channel } from "./types";
 import { BUTTON_STATE, LED, LED_RGB, SCRIBBLE_STRIP_MODE, SCRIBBLE_STRIP_REDRAW_MODE, SCRIBBLE_STRIP_STRING_FORMAT, SysExHdr, VALUE_BAR_MODE } from "./vendorConstants";
 
@@ -12,18 +11,18 @@ const value14Split = (value14: number) => {
     return [lsb, msb]
 }
 
-type OutputGenerator = (...args: any) => (Buffer | Buffer[])
-export type WrappedFunction<T extends (...args: any) => (Buffer | Buffer[])> = ((...args: Parameters<T>) => Buffer[]) & { type: MidiTypes }
+type MidiType = "pitch" | "noteon" | "raw" | "sysex" | "channel aftertouch";
+type OutputGenerator = (...args: any[]) => Buffer | Buffer[]
+export type WrappedFunction<T extends OutputGenerator> = ((...args: Parameters<T>) => Buffer[]) & { type: MidiType }
 
 // Returns the output of an output generator as a buffer array with a $.type value
-const wrapType: <T extends OutputGenerator>(fn: T, midiType: MidiTypes) => WrappedFunction<T>
-    = <T extends OutputGenerator>(fn: T, midiType) => {
-        let wrapped = (...args) => {
+const wrapType = <T extends OutputGenerator>(fn: T, midiType: MidiType): WrappedFunction<T> => {
+        let wrapped = ((...args: Parameters<T>) => {
             let result: Buffer | Buffer[] = fn(...args)
             return Buffer.isBuffer(result) ? [result] : result
-        }
-        wrapped['type'] = midiType;
-        return <WrappedFunction<T>>wrapped
+        }) as WrappedFunction<T>
+        wrapped.type = midiType;
+        return wrapped
     }
 
 export const setFaderPosition = wrapType(function (fader: Faders16Channel, value14: number) {
@@ -106,6 +105,5 @@ export const setReductionMeter = wrapType(function (strip: Faders16Channel, valu
         value7 & 0x7F
     ])
 }, 'channel aftertouch')
-
 
 
