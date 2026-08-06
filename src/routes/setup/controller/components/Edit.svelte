@@ -56,7 +56,7 @@
   ] satisfies SelectOptionType<ChannelType>[];
 
   const mixTypeOptions = [
-    { name: "Main", value: "" },
+    { name: "Main", value: "MAIN" },
     { name: "Aux mix", value: "AUX" },
     { name: "FX mix", value: "FX" },
   ] satisfies SelectOptionType<string>[];
@@ -262,6 +262,7 @@
       assignment.channel.mixNumber ??= 1;
       return;
     }
+
     assignment.channel.mixType = undefined;
     assignment.channel.mixNumber = undefined;
   }
@@ -497,7 +498,7 @@
                               <Select
                                 class="mt-1"
                                 items={mixTypeOptions}
-                                value={assignment.channel.mixType ?? ""}
+                                value={assignment.channel.mixType ?? "MAIN"}
                                 onchange={(event) =>
                                   updateMixType(activePageIndex, slotIndex, event.currentTarget.value)}
                               />
