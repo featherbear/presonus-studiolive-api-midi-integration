@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@featherbear/presonus-studiolive-api':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.9.0
+        version: 1.9.0
       '@orpc/client':
         specifier: ^1.14.14
         version: 1.14.14
@@ -264,8 +264,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@featherbear/presonus-studiolive-api@1.8.0':
-    resolution: {integrity: sha512-7D7gG/85z8/m+fGaOrkzEtvQZ3P6y9JNVL+uHAEtyjTHTDeBccVJYCNlzJNNWNlGgpkrTENZ0alr/V9G21UWhw==}
+  '@featherbear/presonus-studiolive-api@1.9.0':
+    resolution: {integrity: sha512-/loDCRI6XES3KvE3Hc/fvfF4HXpo4/nYgXHFn7khFH12T7mb2y9bObLzOPJAiABi9G6HsogvBISX2cezQRn63w==}
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -1942,7 +1942,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@featherbear/presonus-studiolive-api@1.8.0':
+  '@featherbear/presonus-studiolive-api@1.9.0':
     dependencies:
       bunyan: 1.8.15
       queue: 6.0.2
